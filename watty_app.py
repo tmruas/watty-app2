@@ -69,7 +69,7 @@ if aba_escolhida == "💬 Chat Socrático":
             Dá pequenas dicas e faz perguntas guiadas. Sê divertido!
             """
             resposta_ia = client.models.generate_content(
-                model='gemini-1.5-flash-8b',
+                model='gemini-2.0-flash',
                 contents=f"{prompt_secreto}\n\nAluno: {mensagem_aluno}"
             )
             st.markdown(resposta_ia.text)
@@ -91,7 +91,7 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
                 Cria um teste rápido de 5 perguntas de escolha múltipla sobre: {tema_exercicios}.
                 No final do teste, fornece a chave de respostas e uma breve explicação para cada uma.
                 """
-                resposta_treino = client.models.generate_content(model='gemini-1.5-flash-8b', contents=prompt_treino)
+                resposta_treino = client.models.generate_content(model='gemini-2.0-flash', contents=prompt_treino)
                 st.markdown(resposta_treino.text)
         else:
             st.warning("Por favor, escreve um tema primeiro!")
@@ -142,7 +142,7 @@ elif aba_escolhida == "📚 Aprender (Resumos)":
                 
                 # A linha que estava cortada, agora inteira!
                 resposta_resumo = client.models.generate_content(
-                    model='gemini-1.5-flash-8b', 
+                    model='gemini-2.0-flash', 
                     contents=prompt_resumo
                 )
                 
@@ -150,6 +150,7 @@ elif aba_escolhida == "📚 Aprender (Resumos)":
         else:
 
             st.warning("Por favor, escreve um tema!")
+
 
 
 
