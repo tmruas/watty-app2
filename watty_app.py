@@ -31,41 +31,23 @@ exemplos = {
     "MACS": "Grafos, Probabilidades",
     "Geometria Descritiva": "Projeções, Sombras"
 }
-# Apanhamos o exemplo certo para a disciplina escolhida
 exemplo_atual = exemplos[disciplina_escolhida]
 st.sidebar.markdown("---")
 
 aba_escolhida = st.sidebar.radio("O que queres fazer?", ["💬 Chat Socrático", "🏋️ Treinar (Quizzes)", "📚 Aprender (Resumos)"])
-
 
 # --- 4. A ABA DO CHAT ---
 if aba_escolhida == "💬 Chat Socrático":
     st.title(f"💬 O Super Tutor de {disciplina_escolhida}")
     st.write(f"Pergunta-me qualquer coisa sobre {disciplina_escolhida}!")
 
-    prompt_secreto = f"""
-    És o Watty, um tutor genial e muito energético especializado em {disciplina_escolhida} do ensino secundário em Portugal.
-    O teu objetivo não é dar a resposta logo, mas sim fazer o aluno pensar!
-    Dá pequenas dicas e faz perguntas guiadas. Sê divertido!
-    """
+    # A gaveta única da disciplina
+    chave_memoria = f"mensagens_{disciplina_escolhida}" 
 
-    # As nossas DUAS gavetas: Uma para o ecrã, outra para o cérebro da Google
-    chave_ecra = f"ecra_{disciplina_escolhida}" 
-    chave_cerebro = f"cerebro_{disciplina_escolhida}"
+    if chave_memoria not in st.session_state:
+        st.session_state[chave_memoria] = [{"role": "assistant", "content": f"Olá, Construtor! ⚡ Que mistério de {disciplina_escolhida} vamos resolver hoje?"}]
 
-    # Se ainda não começámos a falar desta disciplina
-    if chave_ecra not in st.session_state:
-        # 1. Gaveta do Ecrã (o que nós vemos)
-        st.session_state[chave_ecra] = [{"role": "assistant", "content": f"Olá, Construtor! ⚡ Que mistério de {disciplina_escolhida} vamos resolver hoje?"}]
-        
-        # 2. Gaveta do Cérebro (a ferramenta oficial da Google para guardar histórico)
-        st.session_state[chave_cerebro] = client.chats.create(
-            model='gemini-2.5-flash',
-            config={"system_instruction": prompt_secreto}
-        )
-
-    # Mostrar as mensagens no ecrã
-    for msg in st.session_state[chave_ecra]:
+    for msg in st.session_state[chave_memoria]:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
@@ -74,14 +56,32 @@ if aba_escolhida == "💬 Chat Socrático":
     if mensagem_aluno:
         with st.chat_message("user"):
             st.markdown(mensagem_aluno)
-        st.session_state[chave_ecra].append({"role": "user", "content": mensagem_aluno})
+        st.session_state[chave_memoria].append({"role": "user", "content": mensagem_aluno})
 
         with st.chat_message("assistant"):
+            prompt_secreto = f"""
+            És o Watty, um tutor genial e muito energético especializado em {disciplina_escolhida} do ensino secundário em Portugal.
+            O teu objetivo não é dar a resposta logo, mas sim fazer o aluno pensar!
+            Dá pequenas dicas e faz perguntas guiadas. Sê divertido!
+            """
+            
+            # 🧠 O TRUQUE DA MEMÓRIA 100% SEGURO NO STREAMLIT:
+            # Lemos a gaveta e passamos tudo para texto
+            historico_completo = prompt_secreto + "\n\n"
+            for msg in st.session_state[chave_memoria]:
+                if msg["role"] == "user":
+                    historico_completo += f"Aluno: {msg['content']}\n"
+                else:
+                    historico_completo += f"Watty: {msg['content']}\n"
+
             try:
-                # O chat nativo (.send_message) já sabe automaticamente tudo o que foi dito antes!
-                resposta_ia = st.session_state[chave_cerebro].send_message(message=mensagem_aluno)
+                # Enviamos a história inteira numa só mensagem
+                resposta_ia = client.models.generate_content(
+                    model='gemini-2.5-flash',
+                    contents=historico_completo
+                )
                 st.markdown(resposta_ia.text)
-                st.session_state[chave_ecra].append({"role": "assistant", "content": resposta_ia.text})
+                st.session_state[chave_memoria].append({"role": "assistant", "content": resposta_ia.text})
             except Exception as e:
                 st.error(f"Ocorreu um erro na IA: {e}")
 
@@ -89,7 +89,6 @@ if aba_escolhida == "💬 Chat Socrático":
 elif aba_escolhida == "🏋️ Treinar (Quizzes)":
     st.title(f"🏋️ Fábrica de Exercícios: {disciplina_escolhida}")
     
-    # AQUI ESTAVA O ERRO! Substituímos o texto fixo pelo {exemplo_atual}
     tema_exercicios = st.text_input(f"Qual é o tema de {disciplina_escolhida} que queres treinar? (Ex: {exemplo_atual})")
     
     if st.button("Gerar Exercícios ⚙️"):
@@ -100,8 +99,11 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
                 Cria um teste rápido de 5 perguntas de escolha múltipla sobre: {tema_exercicios}.
                 No final do teste, fornece a chave de respostas e uma breve explicação para cada uma.
                 """
-                resposta_treino = client.models.generate_content(model='gemini-2.5-flash', contents=prompt_treino)
-                st.markdown(resposta_treino.text)
+                try:
+                    resposta_treino = client.models.generate_content(model='gemini-2.5-flash', contents=prompt_treino)
+                    st.markdown(resposta_treino.text)
+                except Exception as e:
+                    st.error(f"Erro na IA: {e}")
         else:
             st.warning("Por favor, escreve um tema primeiro!")
             
@@ -109,15 +111,12 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
 elif aba_escolhida == "📚 Aprender (Resumos)":
     st.title(f"📚 Máquina de Resumos: {disciplina_escolhida}")
     
-    # A caixa de texto (já com o exemplo inteligente!)
     tema_resumo = st.text_input(f"Que matéria de {disciplina_escolhida} precisas de resumir? (Ex: {exemplo_atual})")
     
     if st.button("Criar Resumo Mágico 🪄"):
         if tema_resumo:
-            # A animação de carregar (que tinha desaparecido)
             with st.spinner("O Watty está a processar os livros todos... 📚"):
                 
-                # O Novo Cérebro dos Resumos (Estilo Slides)
                 prompt_resumo = f"""
                 És o Watty, um tutor genial e super detalhista de {disciplina_escolhida} do secundário em Portugal.
                 O teu objetivo é criar um resumo sobre o tema: {tema_resumo}.
@@ -149,24 +148,13 @@ elif aba_escolhida == "📚 Aprender (Resumos)":
                 (Uma mnemónica, um truque para decorar ou um resumo de 1 frase).
                 """
                 
-                # A linha que estava cortada, agora inteira!
-                resposta_resumo = client.models.generate_content(
-                    model='gemini-2.5-flash', 
-                    contents=prompt_resumo
-                )
-                
-                st.markdown(resposta_resumo.text)
+                try:
+                    resposta_resumo = client.models.generate_content(
+                        model='gemini-2.5-flash', 
+                        contents=prompt_resumo
+                    )
+                    st.markdown(resposta_resumo.text)
+                except Exception as e:
+                    st.error(f"Erro na IA: {e}")
         else:
             st.warning("Por favor, escreve um tema!")
-
-
-
-
-
-
-
-
-
-
-
-
