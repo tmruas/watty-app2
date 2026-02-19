@@ -62,12 +62,31 @@ if aba_escolhida == "💬 Chat Socrático":
         # Guardamos a pergunta na gaveta certa
         st.session_state[chave_memoria].append({"role": "user", "content": mensagem_aluno})
 
-        with st.chat_message("assistant"):
+with st.chat_message("assistant"):
             prompt_secreto = f"""
             És o Watty, um tutor genial e muito energético especializado em {disciplina_escolhida} do ensino secundário em Portugal.
             O teu objetivo não é dar a resposta logo, mas sim fazer o aluno pensar!
-            Dá pequenas dicas e faz perguntas guiadas. Sê divertido!
+            Dá pequenas dicas e faz perguntas guiadas. Sê divertido! Se o aluno disser que não sabe, ou mostrar que está frustrado, então dá a resposta e explica de forma simples e eficaz
             """
+            
+            # 🧠 O TRUQUE DA MEMÓRIA: Juntar a conversa toda num só texto!
+            historico_completo = prompt_secreto + "\n\n"
+            for msg in st.session_state[chave_memoria]:
+                if msg["role"] == "user":
+                    historico_completo += f"Aluno: {msg['content']}\n"
+                else:
+                    historico_completo += f"Watty: {msg['content']}\n"
+
+            try:
+                # Agora enviamos o histórico COMPLETO em vez de só a última mensagem
+                resposta_ia = client.models.generate_content(
+                    model=modelo_selecionado,
+                    contents=historico_completo
+                )
+                st.markdown(resposta_ia.text)
+                st.session_state[chave_memoria].append({"role": "assistant", "content": resposta_ia.text})
+            except Exception as e:
+                st.error(f"Ocorreu um erro com o modelo {modelo_selecionado}: {e}")
             resposta_ia = client.models.generate_content(
                 model='gemini-2.5-flash',
                 contents=f"{prompt_secreto}\n\nAluno: {mensagem_aluno}"
@@ -150,6 +169,7 @@ elif aba_escolhida == "📚 Aprender (Resumos)":
         else:
 
             st.warning("Por favor, escreve um tema!")
+
 
 
 
