@@ -43,15 +43,29 @@ if aba_escolhida == "💬 Chat Socrático":
     st.title(f"💬 O Super Tutor de {disciplina_escolhida}")
     st.write(f"Pergunta-me qualquer coisa sobre {disciplina_escolhida}!")
 
-    # O GRANDE TRUQUE: Criar um nome de gaveta único para cada disciplina!
-    chave_memoria = f"mensagens_{disciplina_escolhida}" 
+    prompt_secreto = f"""
+    És o Watty, um tutor genial e muito energético especializado em {disciplina_escolhida} do ensino secundário em Portugal.
+    O teu objetivo não é dar a resposta logo, mas sim fazer o aluno pensar!
+    Dá pequenas dicas e faz perguntas guiadas. Sê divertido!
+    """
 
-    # Se a gaveta desta disciplina específica ainda não existir, criamos uma!
-    if chave_memoria not in st.session_state:
-        st.session_state[chave_memoria] = [{"role": "assistant", "content": f"Olá, Construtor! ⚡ Que mistério de {disciplina_escolhida} vamos resolver hoje?"}]
+    # As nossas DUAS gavetas: Uma para o ecrã, outra para o cérebro da Google
+    chave_ecra = f"ecra_{disciplina_escolhida}" 
+    chave_cerebro = f"cerebro_{disciplina_escolhida}"
 
-    # Mostramos apenas as mensagens guardadas na gaveta da disciplina atual
-    for msg in st.session_state[chave_memoria]:
+    # Se ainda não começámos a falar desta disciplina
+    if chave_ecra not in st.session_state:
+        # 1. Gaveta do Ecrã (o que nós vemos)
+        st.session_state[chave_ecra] = [{"role": "assistant", "content": f"Olá, Construtor! ⚡ Que mistério de {disciplina_escolhida} vamos resolver hoje?"}]
+        
+        # 2. Gaveta do Cérebro (a ferramenta oficial da Google para guardar histórico)
+        st.session_state[chave_cerebro] = client.chats.create(
+            model='gemini-2.5-flash',
+            config={"system_instruction": prompt_secreto}
+        )
+
+    # Mostrar as mensagens no ecrã
+    for msg in st.session_state[chave_ecra]:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
@@ -60,33 +74,14 @@ if aba_escolhida == "💬 Chat Socrático":
     if mensagem_aluno:
         with st.chat_message("user"):
             st.markdown(mensagem_aluno)
-        # Guardamos a pergunta na gaveta certa
-        st.session_state[chave_memoria].append({"role": "user", "content": mensagem_aluno})
+        st.session_state[chave_ecra].append({"role": "user", "content": mensagem_aluno})
 
         with st.chat_message("assistant"):
-            prompt_secreto = f"""
-            És o Watty, um tutor genial e muito energético especializado em {disciplina_escolhida} do ensino secundário em Portugal.
-            O teu objetivo não é dar a resposta logo, mas sim fazer o aluno pensar!
-            Dá pequenas dicas e faz perguntas guiadas. Sê divertido!
-            """
-            
-            # 🧠 O TRUQUE DA MEMÓRIA: Juntar a conversa toda num só texto!
-            historico_completo = prompt_secreto + "\n\n"
-            for msg in st.session_state[chave_memoria]:
-                if msg["role"] == "user":
-                    historico_completo += f"Aluno: {msg['content']}\n"
-                else:
-                    historico_completo += f"Watty: {msg['content']}\n"
-
             try:
-                # Agora enviamos o histórico COMPLETO para o Gemini 2.5 Flash
-                resposta_ia = client.models.generate_content(
-                    model='gemini-2.5-flash',
-                    contents=historico_completo
-                )
+                # O chat nativo (.send_message) já sabe automaticamente tudo o que foi dito antes!
+                resposta_ia = st.session_state[chave_cerebro].send_message(message=mensagem_aluno)
                 st.markdown(resposta_ia.text)
-                # Guardamos a nova resposta na gaveta
-                st.session_state[chave_memoria].append({"role": "assistant", "content": resposta_ia.text})
+                st.session_state[chave_ecra].append({"role": "assistant", "content": resposta_ia.text})
             except Exception as e:
                 st.error(f"Ocorreu um erro na IA: {e}")
 
@@ -163,6 +158,7 @@ elif aba_escolhida == "📚 Aprender (Resumos)":
                 st.markdown(resposta_resumo.text)
         else:
             st.warning("Por favor, escreve um tema!")
+
 
 
 
