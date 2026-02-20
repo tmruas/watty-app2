@@ -65,17 +65,20 @@ if aba_escolhida == "💬 Chat Socrático":
             Dá pequenas dicas e faz perguntas guiadas. Sê divertido!
             """
             
-            # 🧠 O TRUQUE DA MEMÓRIA 100% SEGURO NO STREAMLIT:
-            # Lemos a gaveta e passamos tudo para texto
+            # 🧠 O NOVO TRUQUE (A Janela Deslizante Anti-Faturas Altas):
             historico_completo = prompt_secreto + "\n\n"
-            for msg in st.session_state[chave_memoria]:
+            
+            # Cortamos a memória para as ÚLTIMAS 6 mensagens (3 perguntas do aluno, 3 respostas do Watty)
+            mensagens_recentes = st.session_state[chave_memoria][-6:]
+            
+            for msg in mensagens_recentes:
                 if msg["role"] == "user":
                     historico_completo += f"Aluno: {msg['content']}\n"
                 else:
                     historico_completo += f"Watty: {msg['content']}\n"
 
             try:
-                # Enviamos a história inteira numa só mensagem
+                # Agora enviamos um histórico "leve e barato" para a Google
                 resposta_ia = client.models.generate_content(
                     model='gemini-2.5-flash',
                     contents=historico_completo
@@ -158,3 +161,4 @@ elif aba_escolhida == "📚 Aprender (Resumos)":
                     st.error(f"Erro na IA: {e}")
         else:
             st.warning("Por favor, escreve um tema!")
+
