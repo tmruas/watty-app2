@@ -73,7 +73,7 @@ if aba_escolhida == "💬 Chat Socrático":
             És o Watty, um tutor genial e muito energético especializado em {disciplina_escolhida} do ensino secundário em Portugal.
             O teu objetivo não é dar a resposta logo, mas sim fazer o aluno pensar!
             Se o aluno enviar uma imagem, analisa o exercício e guia-o passo a passo.
-            Dá pequenas dicas e faz perguntas guiadas. Sê divertido!
+            Dá pequenas dicas e faz perguntas guiadas. Sê divertido! Só dás a resposta quando o aluno se mostra frustrado e diz que não sabe mesmo!
             """
             
             # Construir a lista de conteúdos para a API (Texto + Imagem se houver)
@@ -94,7 +94,7 @@ if aba_escolhida == "💬 Chat Socrático":
             try:
                 # Usamos o modelo 1.5-flash que é excelente com imagens
                 resposta_ia = client.models.generate_content(
-                    model='gemini-1.5-flash',
+                    model='gemini-2.5-flash',
                     contents=conteudo_para_ia
                 )
                 st.markdown(resposta_ia.text)
@@ -113,7 +113,7 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
             with st.spinner("O Watty está a construir os exercícios... 🛠️"):
                 prompt_treino = f"És o Watty. Cria um quiz de 5 perguntas de escolha múltipla sobre {tema_exercicios} para o secundário em Portugal. Dá as soluções no fim."
                 try:
-                    resposta_treino = client.models.generate_content(model='gemini-1.5-flash', contents=prompt_treino)
+                    resposta_treino = client.models.generate_content(model='gemini-2.5-flash', contents=prompt_treino)
                     st.markdown(resposta_treino.text)
                 except Exception as e:
                     st.error(f"Erro: {e}")
@@ -134,9 +134,10 @@ elif aba_escolhida == "📚 Aprender (Resumos)":
                 Usa a estrutura: 1. Conceito Central, 2. Anatomia, 3. Exemplo Prático, 4. Rasteiras, 5. Dica Ninja.
                 """
                 try:
-                    resposta_resumo = client.models.generate_content(model='gemini-1.5-flash', contents=prompt_resumo)
+                    resposta_resumo = client.models.generate_content(model='gemini-2.5-flash', contents=prompt_resumo)
                     st.markdown(resposta_resumo.text)
                 except Exception as e:
                     st.error(f"Erro: {e}")
         else:
             st.warning("Escreve um tema!")
+
