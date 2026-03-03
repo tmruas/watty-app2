@@ -111,7 +111,19 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
     if st.button("Gerar Exercícios ⚙️"):
         if tema_exercicios:
             with st.spinner("O Watty está a construir os exercícios... 🛠️"):
-                prompt_treino = f"És o Watty. Cria um quiz de 5 perguntas de escolha múltipla sobre {tema_exercicios} para o secundário em Portugal. Dá as soluções no fim."
+                prompt_treino = f"""
+És o Watty, o tutor de elite para os Exames Nacionais de {disciplina_escolhida} em Portugal.
+Cria um teste rigoroso de 5 perguntas sobre: {tema_exercicios}.
+
+REGRAS OBRIGATÓRIAS (Lê com atenção!):
+1. DIVERSIDADE DE FORMATOS: Inclui 3 perguntas de Escolha Múltipla e 2 Perguntas Abertas (de desenvolvimento ou cálculo).
+2. ALEATORIEDADE (MUITO IMPORTANTE): Nas perguntas de escolha múltipla, a opção correta TEM de ser distribuída de forma totalmente aleatória entre A, B, C e D. É expressamente proibido que a resposta certa seja maioritariamente B ou C.
+3. ESTILO DE EXAME: O nível de dificuldade e o vocabulário devem ser idênticos aos dos exames do IAVE.
+
+FORMATO DE RESPOSTA:
+Apresenta primeiro apenas as perguntas.
+No final, cria uma secção clara chamada "✅ CHAVE DE CORREÇÃO E EXPLICAÇÕES", onde dás as respostas corretas e explicas passo a passo como lá chegar.
+"""
                 try:
                     resposta_treino = client.models.generate_content(model='gemini-2.5-flash', contents=prompt_treino)
                     st.markdown(resposta_treino.text)
@@ -140,4 +152,5 @@ elif aba_escolhida == "📚 Aprender (Resumos)":
                     st.error(f"Erro: {e}")
         else:
             st.warning("Escreve um tema!")
+
 
