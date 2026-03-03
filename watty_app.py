@@ -137,28 +137,48 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
                 3. DIVERSIDADE: Inclui 3 perguntas de Escolha Múltipla e 2 Perguntas Abertas.
                 4. ALEATORIEDADE: A opção correta TEM de ser distribuída aleatoriamente (A, B, C ou D).
                 
-                🎨 REGRAS DE ESTÉTICA VISUAL (CRÍTICO):
-                Obrigatoriamente, usa muito espaçamento e linhas horizontais para separar as perguntas.
-                Usa EXATAMENTE este molde visual para cada pergunta:
+                🎨 REGRAS DE ESTÉTICA VISUAL (MUITO IMPORTANTE):
+                É PROIBIDO colocar as opções de resposta na mesma linha. Tens de usar o formato de lista do Markdown (com um traço inicial) para que fiquem umas por baixo das outras.
+                
+                Usa EXATAMENTE este molde visual para as perguntas:
 
                 ### 📝 Pergunta [Número]
                 **[Texto detalhado da Pergunta]**
 
-                🔸 **A)** [Opção]
-                🔸 **B)** [Opção]
-                🔸 **C)** [Opção]
-                🔸 **D)** [Opção]
+                - **A)** [Opção]
+                - **B)** [Opção]
+                - **C)** [Opção]
+                - **D)** [Opção]
 
                 ---
 
-                No final de todas as perguntas, cria uma secção muito clara para as soluções usando este molde:
-
-                ### ✅ CHAVE DE CORREÇÃO E EXPLICAÇÕES
-                > **Pergunta 1:** [Opção Correta] - [Explicação curta e direta]
+                Quando terminares as 5 perguntas, tens OBRIGATORIAMENTE de escrever a seguinte palavra-passe exata:
+                ===SOLUCOES===
+                
+                Por baixo dessa palavra-passe, escreve a chave de correção:
+                **Pergunta 1:** [Opção Correta] - [Explicação]
                 """
                 try:
                     resposta_treino = client.models.generate_content(model='gemini-2.5-flash', contents=prompt_treino)
-                    st.markdown(resposta_treino.text)
+                    texto_completo = resposta_treino.text
+                    
+                    # O TRUQUE PARA ESCONDER AS SOLUÇÕES
+                    if "===SOLUCOES===" in texto_completo:
+                        # Cortamos o texto em dois pedaços usando a palavra-passe secreta
+                        partes = texto_completo.split("===SOLUCOES===")
+                        perguntas = partes[0]
+                        solucoes = partes[1]
+                        
+                        # Mostramos as perguntas normalmente
+                        st.markdown(perguntas)
+                        
+                        # Mostramos as soluções dentro de uma caixa expansível!
+                        with st.expander("👀 Ver Chave de Correção e Explicações"):
+                            st.markdown(solucoes)
+                    else:
+                        # Caso a IA se esqueça da palavra-passe (raro), mostra tudo normal
+                        st.markdown(texto_completo)
+                        
                 except Exception as e:
                     st.error(f"Erro: {e}")
         else:
@@ -209,5 +229,6 @@ elif aba_escolhida == "📚 Aprender (Resumos)":
                     st.error(f"Erro: {e}")
         else:
             st.warning("Escreve um tema!")
+
 
 
