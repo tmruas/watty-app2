@@ -99,7 +99,7 @@ if aba_escolhida == "💬 Chat Socrático":
             
             conteudo_para_ia = [prompt_secreto]
             
-            mensagens_recentes = st.session_state[chave_memoria][-4:]
+            mensagens_recentes = st.session_state[chave_memoria][-8:]
             for m in mensagens_recentes:
                 conteudo_para_ia.append(f"{m['role']}: {m['content']}")
             
@@ -191,3 +191,4 @@ elif aba_escolhida == "📚 Aprender (Resumos)":
                     st.error(f"Erro: {e}")
         else:
             st.warning("Escreve um tema!")
+
