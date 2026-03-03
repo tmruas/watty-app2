@@ -2,6 +2,9 @@ import streamlit as st
 import os
 from google import genai
 from PIL import Image
+import datetime
+import gspread
+from google.oauth2.service_account import Credentials
 
 # --- 1. A TUA CHAVE DE ACESSO ---
 os.environ["GEMINI_API_KEY"] = st.secrets["GEMINI_API_KEY"]
@@ -251,6 +254,7 @@ elif aba_escolhida == "📚 Aprender (Resumos)":
                     st.error(f"Erro: {e}")
         else:
             st.warning("Escreve um tema!")
+
 
 
 
