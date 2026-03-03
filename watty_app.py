@@ -9,7 +9,29 @@ client = genai.Client()
 
 # --- 2. CONFIGURAÇÃO DA PÁGINA ---
 st.set_page_config(page_title="Watty | O teu Tutor Inteligente", page_icon="⚡", layout="centered")
+# --- 2.5 A PORTA DE ENTRADA (IDENTIFICAÇÃO) ---
+if "nome_aluno" not in st.session_state:
+    st.title("⚡ Bem-vindo ao Watty!")
+    st.markdown("O teu tutor inteligente 24/7. Antes de começarmos, diz-me quem és:")
+    
+    # Caixa para o aluno escrever
+    nome_input = st.text_input("Qual é o teu Nome e Turma? (Ex: João Silva - 8ºB)")
+    
+    if st.button("Entrar no Watty 🚀"):
+        if nome_input.strip() != "":
+            # Guarda o nome na memória do site
+            st.session_state["nome_aluno"] = nome_input
+            st.rerun() # Recarrega a página magicamente para a versão completa
+        else:
+            st.warning("⚠️ Epa, não te esqueças de escrever o teu nome para eu saber quem és!")
+            
+    # O st.stop() impede que o resto do código (Menu, Chat, Quizzes) seja lido
+    # enquanto o aluno não se identificar!
+    st.stop()
 
+# --- A PARTIR DAQUI O ALUNO JÁ ENTROU ---
+# Podemos até mostrar o nome dele no menu lateral para ficar personalizado!
+st.sidebar.success(f"👤 Olá, {st.session_state['nome_aluno']}!")
 # --- 3. MENU LATERAL (A Bússola) ---
 st.sidebar.image("https://api.dicebear.com/7.x/bottts/svg?seed=Watty&backgroundColor=1CB0F6", width=100)
 st.sidebar.title("⚡ Menu do Watty")
@@ -229,6 +251,7 @@ elif aba_escolhida == "📚 Aprender (Resumos)":
                     st.error(f"Erro: {e}")
         else:
             st.warning("Escreve um tema!")
+
 
 
 
