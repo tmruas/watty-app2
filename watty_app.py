@@ -126,16 +126,35 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
     
     if st.button("Gerar Exercícios ⚙️"):
         if tema_exercicios:
-            with st.spinner("O Watty está a construir os exercícios... 🛠️"):
+            with st.spinner("O Watty está a desenhar os exercícios... 🛠️"):
                 prompt_treino = f"""
                 És o Watty, o tutor de elite para alunos em Portugal.
                 Cria um teste rigoroso de 5 perguntas sobre: {tema_exercicios}.
 
                 REGRAS OBRIGATÓRIAS (Lê com atenção!):
-                1. FOCO NO PROGRAMA: Os exercícios têm de ser EXCLUSIVAMENTE focados na matéria de {disciplina_escolhida} do {ano_escolhido} (segundo as Aprendizagens Essenciais de Portugal). Não incluas conceitos de anos mais avançados!
-                2. DIFICULDADE DE EXAME: A dificuldade deve ser ao nível de uma questão de Exame Nacional, Teste Intermédio ou de um teste final de período muito exigente para o {ano_escolhido}.
-                3. DIVERSIDADE: Inclui 3 perguntas de Escolha Múltipla e 2 Perguntas Abertas (de desenvolvimento ou cálculo).
-                4. ALEATORIEDADE: Nas perguntas de escolha múltipla, a opção correta TEM de ser distribuída de forma totalmente aleatória entre A, B, C e D.
+                1. FOCO NO PROGRAMA: Os exercícios têm de ser EXCLUSIVAMENTE focados na matéria de {disciplina_escolhida} do {ano_escolhido}.
+                2. DIFICULDADE: Nível de Exame Nacional ou Teste Final para o {ano_escolhido}.
+                3. DIVERSIDADE: Inclui 3 perguntas de Escolha Múltipla e 2 Perguntas Abertas.
+                4. ALEATORIEDADE: A opção correta TEM de ser distribuída aleatoriamente (A, B, C ou D).
+                
+                🎨 REGRAS DE ESTÉTICA VISUAL (CRÍTICO):
+                Obrigatoriamente, usa muito espaçamento e linhas horizontais para separar as perguntas.
+                Usa EXATAMENTE este molde visual para cada pergunta:
+
+                ### 📝 Pergunta [Número]
+                **[Texto detalhado da Pergunta]**
+
+                🔸 **A)** [Opção]
+                🔸 **B)** [Opção]
+                🔸 **C)** [Opção]
+                🔸 **D)** [Opção]
+
+                ---
+
+                No final de todas as perguntas, cria uma secção muito clara para as soluções usando este molde:
+
+                ### ✅ CHAVE DE CORREÇÃO E EXPLICAÇÕES
+                > **Pergunta 1:** [Opção Correta] - [Explicação curta e direta]
                 """
                 try:
                     resposta_treino = client.models.generate_content(model='gemini-2.5-flash', contents=prompt_treino)
@@ -144,7 +163,6 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
                     st.error(f"Erro: {e}")
         else:
             st.warning("Escreve um tema!")
-
 # --- 6. A ABA DE APRENDER (RESUMOS) ---
 elif aba_escolhida == "📚 Aprender (Resumos)":
     st.title(f"📚 Máquina de Resumos: {disciplina_escolhida}")
@@ -191,4 +209,5 @@ elif aba_escolhida == "📚 Aprender (Resumos)":
                     st.error(f"Erro: {e}")
         else:
             st.warning("Escreve um tema!")
+
 
