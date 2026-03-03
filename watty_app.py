@@ -15,32 +15,50 @@ st.set_page_config(page_title="Watty | O teu Tutor Inteligente", page_icon="⚡"
 st.sidebar.image("https://api.dicebear.com/7.x/bottts/svg?seed=Watty&backgroundColor=1CB0F6", width=100)
 st.sidebar.title("⚡ Menu do Watty")
 
-lista_disciplinas = [
-    "Matemática", "Português", "Economia", "Físico-Química", 
-    "Filosofia", "Biologia", "História", "MACS", "Geometria Descritiva"
-]
-disciplina_escolhida = st.sidebar.selectbox("📚 Escolhe a Disciplina:", lista_disciplinas)
-
-# --- NOVO: SELETOR DE ANO ---
+# 1º PASSO: Escolher o Ano PRIMEIRO
 lista_anos = ["8º Ano", "9º Ano", "10º Ano", "11º Ano", "12º Ano"]
 ano_escolhido = st.sidebar.selectbox("🎓 Escolhe o Ano:", lista_anos)
 
+# 2º PASSO: A lista de disciplinas muda conforme o ano
+if ano_escolhido in ["8º Ano", "9º Ano"]:
+    lista_disciplinas = [
+        "Matemática", "Português", "Físico-Química", "Ciências Naturais", 
+        "História", "Geografia", "Inglês"
+    ]
+else:
+    # Disciplinas de Secundário
+    lista_disciplinas = [
+        "Matemática A", "Matemática B", "MACS", "Português", "Economia", 
+        "Físico-Química", "Filosofia", "Biologia e Geologia", "História A", 
+        "Geometria Descritiva"
+    ]
+
+# 3º PASSO: Escolher a Disciplina (agora filtrada!)
+disciplina_escolhida = st.sidebar.selectbox("📚 Escolhe a Disciplina:", lista_disciplinas)
+
+# Atualizamos também os exemplos para não dar erro com as novas disciplinas
 exemplos = {
-    "Matemática": "Limites, Trigonometria",
-    "Português": "Os Lusíadas, Fernando Pessoa",
-    "Economia": "Inflação, Lei da Oferta e Procura",
-    "Físico-Química": "Leis de Newton, Tabela Periódica",
-    "Filosofia": "Lógica, Kant",
-    "Biologia": "Mitose, Genética",
-    "História": "Revolução Francesa, Estado Novo",
+    "Matemática": "Teorema de Pitágoras, Equações",
+    "Matemática A": "Limites, Trigonometria",
+    "Matemática B": "Estatística, Taxa de Variação",
     "MACS": "Grafos, Probabilidades",
+    "Português": "Os Lusíadas, Fernando Pessoa",
+    "Economia": "Inflação, Procura e Oferta",
+    "Físico-Química": "Leis de Newton, Tabela Periódica",
+    "Ciências Naturais": "Sistema Digestivo, Fotossíntese",
+    "Filosofia": "Lógica, Descartes",
+    "Biologia e Geologia": "Mitose, Rochas Sedimentares",
+    "História": "Revolução Francesa, 1ª Guerra Mundial",
+    "História A": "Estado Novo, Guerra Fria",
+    "Geografia": "Climas, Demografia",
+    "Inglês": "Past Simple, Phrasal Verbs",
     "Geometria Descritiva": "Projeções, Sombras"
 }
-exemplo_atual = exemplos[disciplina_escolhida]
+
+# Usamos o .get() para evitar erros caso uma disciplina falhe
+exemplo_atual = exemplos.get(disciplina_escolhida, "Tema da matéria")
+
 st.sidebar.markdown("---")
-
-aba_escolhida = st.sidebar.radio("O que queres fazer?", ["💬 Chat Socrático", "🏋️ Treinar (Quizzes)", "📚 Aprender (Resumos)"])
-
 # --- 4. A ABA DO CHAT (COM VISÃO) ---
 if aba_escolhida == "💬 Chat Socrático":
     st.title(f"💬 O Super Tutor de {disciplina_escolhida}")
@@ -183,6 +201,7 @@ Usa EXATAMENTE esta estrutura:
                     st.error(f"Erro: {e}")
         else:
             st.warning("Escreve um tema!")
+
 
 
 
