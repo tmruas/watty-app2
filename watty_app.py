@@ -179,8 +179,14 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
                     resposta_treino = client.models.generate_content(model='gemini-2.5-flash', contents=prompt_treino)
                     
                     # O truque para forçar a mudança de linha nas alíneas (se a IA usar diamantes)
-                    texto_completo = resposta_treino.text.replace("🔸", "\n\n🔸")
                     
+                    # O truque para forçar a mudança de linha nas alíneas (se a IA usar diamantes)
+                    texto_completo = resposta_treino.text.replace("🔸", "\n\n🔸")
+
+                    # 🟢 NOVO TRUQUE: Impede que as perguntas de desenvolvimento fiquem gigantes!
+                    # Garante que há sempre linhas em branco antes do separador
+                    texto_completo = texto_completo.replace("\n---", "\n\n---\n")
+
                     if "===SOLUCOES===" in texto_completo:
                         partes = texto_completo.split("===SOLUCOES===")
                         st.markdown(partes[0])
@@ -221,6 +227,7 @@ elif aba_escolhida == "📚 Aprender (Resumos)":
                     st.error(f"Erro: {e}")
         else:
             st.warning("Escreve um tema!")
+
 
 
 
