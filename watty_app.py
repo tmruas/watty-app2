@@ -5,6 +5,7 @@ from PIL import Image
 import datetime
 import gspread
 from google.oauth2.service_account import Credentials
+import streamlit.components.v1 as components
 
 # --- 1. A TUA CHAVE DE ACESSO ---
 os.environ["GEMINI_API_KEY"] = st.secrets["GEMINI_API_KEY"]
@@ -156,57 +157,153 @@ if aba_escolhida == "💬 Chat Socrático":
                 st.error(f"Erro na IA: {e}")
 
 # 🏋️ ABA QUIZZES
+# 🏋️ ABA QUIZZES
 elif aba_escolhida == "🏋️ Treinar (Quizzes)":
     st.title(f"🏋️ Fábrica de Exercícios: {disciplina_escolhida}")
     
-    tema_exercicios = st.text_input(f"Qual é o tema que queres treinar? (Ex: {exemplo_atual})")
-    
-    if st.button("Gerar Exercícios ⚙️"):
-        if tema_exercicios:
-            with st.spinner("O Watty está a desenhar os exercícios... 🛠️"):
-                prompt_treino = f"""
-                Cria um teste de 5 perguntas sobre: {tema_exercicios} para o {ano_escolhido} de {disciplina_escolhida}.
-                Inclui 3 de Escolha Múltipla e 2 Abertas.
-                
-                Usa EXATAMENTE este molde:
-                ### 📝 Pergunta [Número]
-                **[Texto da Pergunta]**
-                - **A)** [Opção]
-                - **B)** [Opção]
-                - **C)** [Opção]
-                - **D)** [Opção]
-                ---
-                
-                No fim escreve a palavra-passe ===SOLUCOES=== e por baixo a chave de correção.
-                """
-                try:
-                    resposta_treino = client.models.generate_content(model='gemini-2.5-flash', contents=prompt_treino)
-                    
-                    # O truque para forçar a mudança de linha nas alíneas (se a IA usar diamantes)
-                    
-                    # O truque para forçar a mudança de linha nas alíneas (se a IA usar diamantes)
-                    texto_completo = resposta_treino.text.replace("🔸", "\n\n🔸")
+    # CRIAMOS DUAS ABAS DENTRO DO TREINO PARA SEPARAR AS ÁGUAS!
+    tab_rapido, tab_boss = st.tabs(["⚡ Treino Rápido (5 Perguntas)", "⚔️ Boss Battle (Exame 100 min)"])
 
-                    # 🟢 NOVO TRUQUE: Impede que as perguntas de desenvolvimento fiquem gigantes!
-                    # Garante que há sempre linhas em branco antes do separador
-                    texto_completo = texto_completo.replace("\n---", "\n\n---\n")
+    # -----------------------------------------
+    # ABA 1: O TEU CÓDIGO ORIGINAL (Treino Rápido)
+    # -----------------------------------------
+    with tab_rapido:
+        st.markdown("### Treino Rápido para aquecer! 🔥")
+        tema_exercicios = st.text_input(f"Qual é o tema que queres treinar? (Ex: {exemplo_atual})", key="input_rapido")
+        
+        if st.button("Gerar Exercícios ⚙️", key="btn_rapido"):
+            if tema_exercicios:
+                with st.spinner("O Watty está a desenhar os exercícios... 🛠️"):
+                    prompt_treino = f"""
+                    Cria um teste de 5 perguntas sobre: {tema_exercicios} para o {ano_escolhido} de {disciplina_escolhida}.
+                    Inclui 3 de Escolha Múltipla (as respostas têm de ser distribuidas aleatoriamente, não incluir apenas B e C) e 2 Abertas.
+                    
+                    Usa EXATAMENTE este molde:
+                    ### 📝 Pergunta [Número]
+                    **[Texto da Pergunta]**
+                    - **A)** [Opção]
+                    - **B)** [Opção]
+                    - **C)** [Opção]
+                    - **D)** [Opção]
+                    ---
+                    
+                    No fim escreve a palavra-passe ===SOLUCOES=== e por baixo a chave de correção.
+                    """
+                    try:
+                        resposta_treino = client.models.generate_content(model='gemini-2.5-flash', contents=prompt_treino)
+                        texto_completo = resposta_treino.text.replace("🔸", "\n\n🔸").replace("\n---", "\n\n---\n")
 
-                    if "===SOLUCOES===" in texto_completo:
-                        partes = texto_completo.split("===SOLUCOES===")
-                        st.markdown(partes[0])
-                        with st.expander("👀 Ver Chave de Correção e Explicações"):
-                            st.markdown(partes[1])
-                    else:
-                        st.markdown(texto_completo)
+                        if "===SOLUCOES===" in texto_completo:
+                            partes = texto_completo.split("===SOLUCOES===")
+                            st.markdown(partes[0])
+                            with st.expander("👀 Ver Chave de Correção e Explicações"):
+                                st.markdown(partes[1])
+                        else:
+                            st.markdown(texto_completo)
+                            
+                        guardar_no_excel("Quiz Rápido", tema_exercicios, texto_completo)
+                            
+                    except Exception as e:
+                        st.error(f"Erro: {e}")
+            else:
+                st.warning("Escreve um tema!")
+
+    # -----------------------------------------
+    # ABA 2: A NOVA BOSS BATTLE (Exame Simulado)
+    # -----------------------------------------
+    with tab_boss:
+        st.markdown("### ⚔️ O Teste Final")
+        st.write("Mistura vários temas. O Watty vai gerar um Exame Simulado com um relógio implacável de 100 minutos.")
+
+        # 1. Memória do Estado do Exame
+        if "exame_iniciado" not in st.session_state:
+            st.session_state.exame_iniciado = False
+        if "conteudo_exame" not in st.session_state:
+            st.session_state.conteudo_exame = ""
+
+        # 2. Modo Configuração (Antes do Exame começar)
+        if not st.session_state.exame_iniciado:
+            temas_exame = st.text_input("📚 Escreve os temas misturados (Ex: Limites, Derivadas, Funções):", key="input_boss")
+            
+            if st.button("🚀 GERAR EXAME E INICIAR RELÓGIO", use_container_width=True):
+                if temas_exame:
+                    with st.spinner("A forjar a Boss Battle... Isto vai ser épico ⚔️"):
+                        prompt_exame = f"""
+                        Cria um EXAME SIMULADO de {disciplina_escolhida} para o {ano_escolhido}.
+                        Temas a misturar: {temas_exame}.
+                        Gera 20 perguntas no total (10 de Escolha Múltipla difíceis (as respostas têm de ser distribuidas aleatoriamente, não incluir apenas B e C) e 10 de Desenvolvimento (com cálculos e desenvolvimento).
                         
-                    # 🔴 O ROBÔ GRAVA O QUIZ AQUI
-                    guardar_no_excel("Quiz", tema_exercicios, texto_completo)
+                        Usa EXATAMENTE este molde:
+                        ### 📝 Pergunta [Número]
+                        **[Texto da Pergunta]**
+                        - **A)** [Opção]
+                        - **B)** [Opção]
+                        - **C)** [Opção]
+                        - **D)** [Opção]
+                        ---
                         
-                except Exception as e:
-                    st.error(f"Erro: {e}")
+                        No fim escreve a palavra-passe ===SOLUCOES=== e por baixo a chave de correção super detalhada.
+                        """
+                        try:
+                            resposta_exame = client.models.generate_content(model='gemini-2.5-flash', contents=prompt_exame)
+                            texto_exame = resposta_exame.text.replace("🔸", "\n\n🔸").replace("\n---", "\n\n---\n")
+                            
+                            # Grava na memória e arranca!
+                            st.session_state.conteudo_exame = texto_exame
+                            st.session_state.exame_iniciado = True
+                            st.session_state.temas_atuais = temas_exame
+                            st.rerun() # Atualiza o ecrã para mostrar o relógio
+                        except Exception as e:
+                            st.error(f"Erro ao gerar exame: {e}")
+                else:
+                    st.warning("Tens de escrever os temas para o exame!")
+
+        # 3. Modo Jogo (Exame a Decorrer)
         else:
-            st.warning("Escreve um tema!")
-
+            # O Relógio Injetado em HTML (Fica vermelho e a contar para trás)
+            components.html(
+                """
+                <div style="font-size: 30px; font-weight: bold; color: #FF4B4B; text-align: center; font-family: sans-serif; padding: 10px; border: 2px solid #FF4B4B; border-radius: 10px; background-color: #ffeaea;">
+                    ⏱️ Tempo Restante: <span id="timer">100:00</span>
+                </div>
+                <script>
+                    let time = 100 * 60;
+                    setInterval(function() {
+                        let minutes = Math.floor(time / 60);
+                        let seconds = time % 60;
+                        document.getElementById("timer").innerHTML = minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+                        if(time > 0) time--;
+                    }, 1000);
+                </script>
+                """, height=80
+            )
+            
+            st.info(f"**Temas em teste:** {st.session_state.temas_atuais}")
+            
+            # Mostra o exame
+            if "===SOLUCOES===" in st.session_state.conteudo_exame:
+                partes = st.session_state.conteudo_exame.split("===SOLUCOES===")
+                st.markdown(partes[0])
+                
+                st.markdown("---")
+                # Apenas quando o aluno entrega é que vê as soluções
+                with st.expander("👀 ENTREGAR EXAME E VER CORREÇÃO"):
+                    st.markdown(partes[1])
+                    
+                    if st.button("🏁 CONCLUIR E VOLTAR AO MENU", type="primary"):
+                        st.success("Ganhaste +500 XP!")
+                        st.balloons()
+                        # Regista a vitória no Excel
+                        guardar_no_excel("Boss Battle", st.session_state.temas_atuais, "Exame Concluído")
+                        # Faz reset à memória para poder jogar outro dia
+                        st.session_state.exame_iniciado = False
+                        st.session_state.conteudo_exame = ""
+                        st.rerun()
+            else:
+                st.markdown(st.session_state.conteudo_exame)
+                if st.button("Voltar atrás"):
+                    st.session_state.exame_iniciado = False
+                    st.rerun()
 # 📚 ABA RESUMOS
 elif aba_escolhida == "📚 Aprender (Resumos)":
     st.title(f"📚 Máquina de Resumos: {disciplina_escolhida}")
