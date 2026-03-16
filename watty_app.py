@@ -92,7 +92,7 @@ exemplo_atual = exemplos.get(disciplina_escolhida, "Tema da matéria")
 st.sidebar.markdown("---")
 aba_escolhida = st.sidebar.radio("O que queres fazer?", ["💬 Chat Socrático", "🏋️ Treinar (Quizzes)", "📚 Aprender (Resumos)"])
 
-# --- 6. AS ABAS ---
+# --- 6. AS ABAS PRINCIPAIS ---
 
 # 💬 ABA CHAT
 if aba_escolhida == "💬 Chat Socrático":
@@ -128,8 +128,8 @@ if aba_escolhida == "💬 Chat Socrático":
 
 ⚠️ REGRAS DE OURO DE CONTEÚDO:
 1. RIGOR PEDAGÓGICO: Foca-te EXCLUSIVAMENTE nos conteúdos das Aprendizagens Essenciais do Ministério da Educação para o {ano_escolhido}. 
-2. EVITA O EXCESSO: Se um aluno perguntar algo que é de nível universitário ou de outro ano (ex: Curvas de Engel detalhadas vs Lei de Engel básica), explica apenas o que é necessário para o 10º ano. Diz algo como: "Para o teu nível, o que precisas de saber é..."
-3. LINGUAGEM: Usa termos técnicos que aparecem nos manuais portugueses (ex: usar 'Unidade de Consumo' em vez de termos brasileiros ou demasiado técnicos).
+2. EVITA O EXCESSO: Se um aluno perguntar algo que é de nível universitário ou de outro ano, explica apenas o que é necessário para o seu ano. Diz algo como: "Para o teu nível, o que precisas de saber é..."
+3. LINGUAGEM: Usa termos técnicos que aparecem nos manuais portugueses.
 4. MÉTODO SOCRÁTICO: Nunca dês a resposta de bandeja. Guia o aluno com perguntas.
 5. VISÃO: Se houver imagem, ajuda a decifrar o enunciado passo a passo.
             """
@@ -156,8 +156,7 @@ if aba_escolhida == "💬 Chat Socrático":
             except Exception as e:
                 st.error(f"Erro na IA: {e}")
 
-# 🏋️ ABA QUIZZES
-# 🏋️ ABA QUIZZES
+# 🏋️ ABA QUIZZES (AGORA DIVIDIDA EM DUAS!)
 elif aba_escolhida == "🏋️ Treinar (Quizzes)":
     st.title(f"🏋️ Fábrica de Exercícios: {disciplina_escolhida}")
     
@@ -165,7 +164,7 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
     tab_rapido, tab_boss = st.tabs(["⚡ Treino Rápido (5 Perguntas)", "⚔️ Boss Battle (Exame 100 min)"])
 
     # -----------------------------------------
-    # ABA 1: O TEU CÓDIGO ORIGINAL (Treino Rápido)
+    # ABA 1: Treino Rápido (O teu código original)
     # -----------------------------------------
     with tab_rapido:
         st.markdown("### Treino Rápido para aquecer! 🔥")
@@ -176,7 +175,7 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
                 with st.spinner("O Watty está a desenhar os exercícios... 🛠️"):
                     prompt_treino = f"""
                     Cria um teste de 5 perguntas sobre: {tema_exercicios} para o {ano_escolhido} de {disciplina_escolhida}.
-                    Inclui 3 de Escolha Múltipla (as respostas têm de ser distribuidas aleatoriamente, não incluir apenas B e C) e 2 Abertas.
+                    Inclui 3 de Escolha Múltipla e 2 Abertas.
                     
                     Usa EXATAMENTE este molde:
                     ### 📝 Pergunta [Número]
@@ -201,6 +200,7 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
                         else:
                             st.markdown(texto_completo)
                             
+                        # 🔴 GRAVA O QUIZ
                         guardar_no_excel("Quiz Rápido", tema_exercicios, texto_completo)
                             
                     except Exception as e:
@@ -213,7 +213,7 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
     # -----------------------------------------
     with tab_boss:
         st.markdown("### ⚔️ O Teste Final")
-        st.write("Mistura vários temas. O Watty vai gerar um Exame Simulado com um relógio implacável de 100 minutos.")
+        st.write("Mistura vários temas. O Watty vai gerar um Exame Simulado rigoroso com um relógio implacável de 100 minutos.")
 
         # 1. Memória do Estado do Exame
         if "exame_iniciado" not in st.session_state:
@@ -223,26 +223,41 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
 
         # 2. Modo Configuração (Antes do Exame começar)
         if not st.session_state.exame_iniciado:
-            temas_exame = st.text_input("📚 Escreve os temas misturados 
+            temas_exame = st.text_input(f"📚 Escreve os temas misturados (Ex: {exemplo_atual}):", key="input_boss")
             
-            if st.button("🚀 GERAR EXAME E INICIAR RELÓGIO", use_container_width=True):
+            if st.button("🚀 GERAR EXAME E INICIAR RELÓGIO (Custa 2 ⚡)", use_container_width=True):
                 if temas_exame:
                     with st.spinner("A forjar a Boss Battle... Isto vai ser épico ⚔️"):
                         prompt_exame = f"""
-                        Cria um EXAME SIMULADO de {disciplina_escolhida} para o {ano_escolhido}.
-                        Temas a misturar: {temas_exame}.
-                        Gera 20 perguntas no total (10 de Escolha Múltipla difíceis (as respostas têm de ser distribuidas aleatoriamente, não incluir apenas B e C) e 10 de Desenvolvimento (com cálculos e desenvolvimento).
-                        
-                        Usa EXATAMENTE este molde:
-                        ### 📝 Pergunta [Número]
-                        **[Texto da Pergunta]**
+                        Ages como um professor implacável a criar o EXAME FINAL SIMULADO de {disciplina_escolhida} para o {ano_escolhido}.
+                        Temas a avaliar: {temas_exame}.
+
+                        ⚠️ REGRAS DE OURO OBRIGATÓRIAS (PENALIZAÇÃO SE NÃO CUMPRIRES):
+                        1. ALEATORIEDADE: A posição da resposta certa nas escolhas múltiplas TEM DE SER TOTALMENTE ALEATÓRIA. Distribui as respostas certas de forma igual pelas letras A, B, C e D. É expressamente proibido usar apenas B ou C como resposta certa.
+                        2. ESTRUTURA DO EXAME: O exame tem de ter exatamente 3 secções, com a seguinte formatação:
+
+                        ### 🎯 PARTE I - Escolha Múltipla (10 Perguntas)
+                        (Gera 10 perguntas complexas)
+                        **[Número]. [Texto da Pergunta]**
                         - **A)** [Opção]
                         - **B)** [Opção]
                         - **C)** [Opção]
                         - **D)** [Opção]
+
+                        ### 🧮 PARTE II - Grupo 1: Cálculos e Prática (3 Perguntas)
+                        (Gera 3 perguntas que obriguem o aluno a fazer contas matemáticas, aplicar fórmulas ou fazer deduções lógicas passo-a-passo. Adequa ao contexto de {disciplina_escolhida}).
+                        **1.** [Texto do Problema 1]
+                        **2.** [Texto do Problema 2]
+                        **3.** [Texto do Problema 3]
+
+                        ### ✍️ PARTE II - Grupo 2: Desenvolvimento Crítico (2 Perguntas)
+                        (Gera 2 perguntas abertas teóricas que exijam justificação, análise crítica, interpretação de texto ou argumentação longa).
+                        **1.** [Texto da Pergunta Teórica 1]
+                        **2.** [Texto da Pergunta Teórica 2]
+
                         ---
-                        
-                        No fim escreve a palavra-passe ===SOLUCOES=== e por baixo a chave de correção super detalhada.
+                        No fim de gerado o exame, escreve a palavra-passe ===SOLUCOES=== e por baixo gera a CHAVE DE CORREÇÃO SUPER DETALHADA. 
+                        Na correção das escolhas múltiplas, lista a grelha de respostas (ex: 1-A, 2-D, 3-C...) para provar que usaste todas as letras. Para os cálculos, mostra as contas passo-a-passo.
                         """
                         try:
                             resposta_exame = client.models.generate_content(model='gemini-2.5-flash', contents=prompt_exame)
@@ -260,7 +275,7 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
 
         # 3. Modo Jogo (Exame a Decorrer)
         else:
-            # O Relógio Injetado em HTML (Fica vermelho e a contar para trás)
+            # O Relógio Injetado em HTML (Fica vermelho e a contar para trás 100 minutos)
             components.html(
                 """
                 <div style="font-size: 30px; font-weight: bold; color: #FF4B4B; text-align: center; font-family: sans-serif; padding: 10px; border: 2px solid #FF4B4B; border-radius: 10px; background-color: #ffeaea;">
@@ -291,7 +306,7 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
                     st.markdown(partes[1])
                     
                     if st.button("🏁 CONCLUIR E VOLTAR AO MENU", type="primary"):
-                        st.success("Ganhaste +500 XP!")
+                        st.success("Batalha Concluída! Ganhaste +500 XP!")
                         st.balloons()
                         # Regista a vitória no Excel
                         guardar_no_excel("Boss Battle", st.session_state.temas_atuais, "Exame Concluído")
@@ -304,6 +319,7 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
                 if st.button("Voltar atrás"):
                     st.session_state.exame_iniciado = False
                     st.rerun()
+
 # 📚 ABA RESUMOS
 elif aba_escolhida == "📚 Aprender (Resumos)":
     st.title(f"📚 Máquina de Resumos: {disciplina_escolhida}")
@@ -328,11 +344,3 @@ elif aba_escolhida == "📚 Aprender (Resumos)":
                     st.error(f"Erro: {e}")
         else:
             st.warning("Escreve um tema!")
-
-
-
-
-
-
-
-
