@@ -223,7 +223,7 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
 
         # 2. Modo Configuração (Antes do Exame começar)
         if not st.session_state.exame_iniciado:
-            temas_exame = st.text_input("📚 Escreve os temas misturados (Ex: Limites, Derivadas, Funções):", key="input_boss")
+            temas_exame = st.text_input("📚 Escreve os temas misturados (Ex: {exemplo_atual}):", key="input_boss")
             
             if st.button("🚀 GERAR EXAME E INICIAR RELÓGIO", use_container_width=True):
                 if temas_exame:
