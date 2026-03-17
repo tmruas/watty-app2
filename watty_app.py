@@ -205,7 +205,7 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
             else:
                 st.warning("Escreve um tema!")
 
-    # --- ABA 2: BOSS BATTLE (SIMULADOR DE EXAMES) ---
+    # --- ABA 2: BOSS BATTLE (SIMULADOR DE EXAMES 2025) ---
     with tab_boss:
         st.markdown("### ⚔️ O Teste Final (Modelos IAVE 2025)")
         st.write("Mistura vários temas. O Watty vai gerar um Exame Simulado rigoroso com um relógio implacável de 100 minutos.")
@@ -224,8 +224,16 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
             if tipo_exame == "🎯 Temas Específicos":
                 temas_exame = st.text_input(f"📚 Escreve os temas misturados (Ex: {exemplo_atual}):", key="input_boss")
             else:
-                temas_exame = f"Todo o programa oficial das Aprendizagens Essenciais de {disciplina_escolhida} do {ano_escolhido} (Simulacro de Exame Nacional)."
-                st.info("🚨 Prepara-te! Este modo vai testar TODA a matéria do ano.")
+                # 🟢 O CÉREBRO DOS CICLOS DE EXAME
+                if disciplina_escolhida in ["Português", "Matemática A", "História A"]:
+                    ciclo = "10º, 11º e 12º anos"
+                elif ano_escolhido in ["8º Ano", "9º Ano"]:
+                    ciclo = "todo o 3º Ciclo (7º, 8º e 9º anos)"
+                else:
+                    ciclo = "10º e 11º anos" # Disciplinas Bienais (Economia, FQA, BG, etc.)
+                    
+                temas_exame = f"Todo o programa oficial das Aprendizagens Essenciais de {disciplina_escolhida} referente a todo o ciclo de exame ({ciclo})."
+                st.info(f"🚨 Prepara-te! Este modo vai testar TODA a matéria do ciclo ({ciclo}).")
 
             if st.button("🚀 GERAR EXAME E INICIAR RELÓGIO (Custa 2 ⚡)", use_container_width=True):
                 if tipo_exame == "🌍 Exame Global (Simulacro IAVE)" or (tipo_exame == "🎯 Temas Específicos" and temas_exame):
@@ -287,7 +295,7 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
                             O exame tem um total de 18 itens (12 obrigatórios + 6 opcionais):
                             - GRUPO I: 10 a 12 perguntas de Escolha Múltipla (lógica, ética, epistemologia).
                             - GRUPO II: Apresenta pequenos excertos de filósofos (Descartes, Hume, Kant, etc.). Pede a identificação de teses e argumentos.
-                            - GRUPO III: 1 Ensaio Filosófico argumentativo onde o aluno deve justificar uma posição.
+                            - GRUPO III: 1 Ensaio Filosófico argumentativo onde o aluno deve justify uma posição.
                             """,
                             "Geometria Descritiva": """
                             O exame tem um total de 5 itens práticos de desenho (2 obrigatórios + 3 opcionais):
