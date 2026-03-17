@@ -73,7 +73,7 @@ else:
     lista_disciplinas = [
         "Matemática A", "Matemática B", "MACS", "Português", "Economia", 
         "Físico-Química", "Filosofia", "Biologia e Geologia", "História A", 
-        "Geometria Descritiva"
+        "Geometria Descritiva", "Inglês"
     ]
 
 disciplina_escolhida = st.sidebar.selectbox("📚 Escolhe a Disciplina:", lista_disciplinas)
@@ -156,16 +156,14 @@ if aba_escolhida == "💬 Chat Socrático":
             except Exception as e:
                 st.error(f"Erro na IA: {e}")
 
-# 🏋️ ABA QUIZZES (AGORA DIVIDIDA EM DUAS!)
+# 🏋️ ABA QUIZZES (COM BOSS BATTLE)
 elif aba_escolhida == "🏋️ Treinar (Quizzes)":
     st.title(f"🏋️ Fábrica de Exercícios: {disciplina_escolhida}")
     
-    # CRIAMOS DUAS ABAS DENTRO DO TREINO PARA SEPARAR AS ÁGUAS!
+    # Duas sub-abas para separar o treino da Batalha
     tab_rapido, tab_boss = st.tabs(["⚡ Treino Rápido (5 Perguntas)", "⚔️ Boss Battle (Exame 100 min)"])
 
-    # -----------------------------------------
-    # ABA 1: Treino Rápido (O teu código original)
-    # -----------------------------------------
+    # --- ABA 1: TREINO RÁPIDO ---
     with tab_rapido:
         st.markdown("### Treino Rápido para aquecer! 🔥")
         tema_exercicios = st.text_input(f"Qual é o tema que queres treinar? (Ex: {exemplo_atual})", key="input_rapido")
@@ -200,7 +198,6 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
                         else:
                             st.markdown(texto_completo)
                             
-                        # 🔴 GRAVA O QUIZ
                         guardar_no_excel("Quiz Rápido", tema_exercicios, texto_completo)
                             
                     except Exception as e:
@@ -208,11 +205,9 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
             else:
                 st.warning("Escreve um tema!")
 
-    # -----------------------------------------
-    # ABA 2: A NOVA BOSS BATTLE (Exame Simulado)
-    # -----------------------------------------
+    # --- ABA 2: BOSS BATTLE (SIMULADOR DE EXAMES) ---
     with tab_boss:
-        st.markdown("### ⚔️ O Teste Final")
+        st.markdown("### ⚔️ O Teste Final (Modelos IAVE 2025)")
         st.write("Mistura vários temas. O Watty vai gerar um Exame Simulado rigoroso com um relógio implacável de 100 minutos.")
 
         # 1. Memória do Estado do Exame
@@ -221,61 +216,129 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
         if "conteudo_exame" not in st.session_state:
             st.session_state.conteudo_exame = ""
 
-        # 2. Modo Configuração (Antes do Exame começar)
+        # 2. Modo Configuração
         if not st.session_state.exame_iniciado:
-            temas_exame = st.text_input(f"📚 Escreve os temas misturados (Ex: {exemplo_atual}):", key="input_boss")
+            tipo_exame = st.radio("Como queres configurar a tua Boss Battle?", 
+                                  ["🎯 Temas Específicos", "🌍 Exame Global (Simulacro IAVE)"])
             
+            if tipo_exame == "🎯 Temas Específicos":
+                temas_exame = st.text_input(f"📚 Escreve os temas misturados (Ex: {exemplo_atual}):", key="input_boss")
+            else:
+                temas_exame = f"Todo o programa oficial das Aprendizagens Essenciais de {disciplina_escolhida} do {ano_escolhido} (Simulacro de Exame Nacional)."
+                st.info("🚨 Prepara-te! Este modo vai testar TODA a matéria do ano.")
+
             if st.button("🚀 GERAR EXAME E INICIAR RELÓGIO (Custa 2 ⚡)", use_container_width=True):
-                if temas_exame:
-                    with st.spinner("A forjar a Boss Battle... Isto vai ser épico ⚔️"):
+                if tipo_exame == "🌍 Exame Global (Simulacro IAVE)" or (tipo_exame == "🎯 Temas Específicos" and temas_exame):
+                    with st.spinner("A forjar a Boss Battle com o formato oficial do IAVE... Isto vai ser épico ⚔️"):
+                        
+                        # 🟢 O CÉREBRO DAS ESTRUTURAS IAVE (2025)
+                        estruturas_iave = {
+                            "Economia": """
+                            O exame tem um total de 22 itens, focado na nova estrutura do IAVE (16 obrigatórios + 6 opcionais):
+                            - PARTE 1 (Itens de Seleção): 15 perguntas de Escolha Múltipla.
+                            - PARTE 2 (Itens de Construção): 7 perguntas de resposta restrita baseadas num texto, tabela ou gráfico de dados económicos.
+                            - Nota para a IA: Indica no exame quais são as 4 perguntas opcionais de desenvolvimento.
+                            """,
+                            "Matemática A": """
+                            O exame tem um total de 18 itens (12 obrigatórios + 6 opcionais):
+                            - PARTE 1: 5 perguntas de Escolha Múltipla (teoria e raciocínio direto).
+                            - PARTE 2: 13 problemas de desenvolvimento complexos (cálculos passo-a-passo, funções, geometria, probabilidades).
+                            - Nota para a IA: Simula o modelo 2025, indicando que nos itens opcionais só contam as 3 melhores respostas.
+                            """,
+                            "Matemática B": """
+                            O exame tem um total de 18 itens (12 obrigatórios + 6 opcionais):
+                            - Foco em problemas práticos, otimização, grafos e estatística.
+                            - Cerca de 5 Escolhas Múltiplas e 13 problemas de desenvolvimento contextualizados no quotidiano.
+                            """,
+                            "MACS": """
+                            O exame tem um total de 14 itens (10 obrigatórios + 4 opcionais):
+                            - Foco em métodos de votação, grafos, modelos financeiros e estatística.
+                            - Cerca de 4 Escolhas Múltiplas e 10 problemas de desenvolvimento onde o aluno deve explicar o raciocínio.
+                            """,
+                            "Português": """
+                            O exame tem um total de 15 itens (10 obrigatórios + 5 opcionais):
+                            - GRUPO I (Educação Literária): Apresenta um excerto de uma obra. Gera 3 a 5 perguntas de interpretação.
+                            - GRUPO II (Leitura e Gramática): Apresenta um texto não-literário. Gera 7 perguntas (escolha múltipla e resposta curta).
+                            - GRUPO III (Produção Escrita): 1 proposta de redação de um texto de opinião (200-350 palavras) sobre um tema específico.
+                            """,
+                            "Biologia e Geologia": """
+                            O exame tem um total de 28 itens (20 obrigatórios + 8 opcionais):
+                            - A prova é composta por 4 Grupos (2 de Biologia, 2 de Geologia).
+                            - Cada grupo DEVE começar com um texto descrevendo uma experiência, observação ou fenómeno.
+                            - Após cada texto, gera várias perguntas de Escolha Múltipla e termina com 1 ou 2 perguntas de resposta restrita de relação de conceitos.
+                            """,
+                            "Físico-Química": """
+                            O exame tem um total de 23 itens (15 obrigatórios + 8 opcionais):
+                            - Divide-se em situações problemáticas de Física e de Química (contextos experimentais).
+                            - Mistura Escolhas Múltiplas e problemas de cálculo rigoroso (obriga à apresentação de todas as fórmulas e unidades do S.I.).
+                            """,
+                            "História A": """
+                            O exame tem um total de 14 itens (10 obrigatórios + 4 opcionais):
+                            - GRUPO I e II: Apresenta textos históricos (fontes). Gera perguntas de escolha múltipla e respostas curtas baseadas na análise da fonte.
+                            - GRUPO III: 1 ou 2 respostas extensas (desenvolvimento) exigindo a integração de conceitos, contextualização espacial e temporal.
+                            """,
+                            "Geografia": """
+                            O exame tem um total de 28 itens (18 obrigatórios + 10 opcionais):
+                            - Foco gigante em análise espacial.
+                            - Descreve mapas, perfis topográficos ou gráficos e gera questões de Escolha Múltipla.
+                            - Inclui perguntas de resposta restrita de análise crítica a problemas demográficos ou territoriais de Portugal.
+                            """,
+                            "Filosofia": """
+                            O exame tem um total de 18 itens (12 obrigatórios + 6 opcionais):
+                            - GRUPO I: 10 a 12 perguntas de Escolha Múltipla (lógica, ética, epistemologia).
+                            - GRUPO II: Apresenta pequenos excertos de filósofos (Descartes, Hume, Kant, etc.). Pede a identificação de teses e argumentos.
+                            - GRUPO III: 1 Ensaio Filosófico argumentativo onde o aluno deve justificar uma posição.
+                            """,
+                            "Geometria Descritiva": """
+                            O exame tem um total de 5 itens práticos de desenho (2 obrigatórios + 3 opcionais):
+                            - Fornece as coordenadas rigorosas (abcissa, afastamento, cota) para 5 problemas (ex: intersecção de planos, sombras, perspetivas).
+                            - O aluno desenha no papel e depois verifica as soluções geradas passo a passo pela IA.
+                            """,
+                            "Inglês": """
+                            O exame testa a proficiência e compreensão:
+                            - PART 1 (Reading): Apresenta um texto em inglês e faz 5 perguntas de Escolha Múltipla de interpretação.
+                            - PART 2 (Use of English): 5 frases para reescrever (sentence transformation) ou espaços para preencher com vocabulário/gramática.
+                            - PART 3 (Writing): Pede um texto de opinião (essay) de 150-220 palavras em inglês sobre um tema atual.
+                            """
+                        }
+
+                        estrutura_default = """
+                        - GRUPO I: 10 perguntas de Escolha Múltipla.
+                        - GRUPO II: 4 perguntas de resposta curta.
+                        - GRUPO III: 1 pergunta de desenvolvimento longo.
+                        """
+
+                        estrutura_oficial = estruturas_iave.get(disciplina_escolhida, estrutura_default)
+
                         prompt_exame = f"""
-                        Ages como um professor implacável a criar o EXAME FINAL SIMULADO de {disciplina_escolhida} para o {ano_escolhido}.
+                        Ages como o IAVE (Instituto de Avaliação Educativa) a criar o EXAME FINAL SIMULADO de {disciplina_escolhida} para o {ano_escolhido} em Portugal.
                         Temas a avaliar: {temas_exame}.
 
-                        ⚠️ REGRAS DE OURO OBRIGATÓRIAS (PENALIZAÇÃO SE NÃO CUMPRIRES):
-                        1. ALEATORIEDADE: A posição da resposta certa nas escolhas múltiplas TEM DE SER TOTALMENTE ALEATÓRIA. Distribui as respostas certas de forma igual pelas letras A, B, C e D. É expressamente proibido usar apenas B ou C como resposta certa.
-                        2. ESTRUTURA DO EXAME: O exame tem de ter exatamente 3 secções, com a seguinte formatação:
-
-                        ### 🎯 PARTE I - Escolha Múltipla (10 Perguntas)
-                        (Gera 10 perguntas complexas)
-                        **[Número]. [Texto da Pergunta]**
-                        - **A)** [Opção]
-                        - **B)** [Opção]
-                        - **C)** [Opção]
-                        - **D)** [Opção]
-
-                        ### 🧮 PARTE II - Grupo 1: Cálculos e Prática (3 Perguntas)
-                        (Gera 3 perguntas que obriguem o aluno a fazer contas matemáticas, aplicar fórmulas ou fazer deduções lógicas passo-a-passo. Adequa ao contexto de {disciplina_escolhida}).
-                        **1.** [Texto do Problema 1]
-                        **2.** [Texto do Problema 2]
-                        **3.** [Texto do Problema 3]
-
-                        ### ✍️ PARTE II - Grupo 2: Desenvolvimento Crítico (2 Perguntas)
-                        (Gera 2 perguntas abertas teóricas que exijam justificação, análise crítica, interpretação de texto ou argumentação longa).
-                        **1.** [Texto da Pergunta Teórica 1]
-                        **2.** [Texto da Pergunta Teórica 2]
+                        ⚠️ REGRAS DE OURO OBRIGATÓRIAS:
+                        1. ALEATORIEDADE NA ESCOLHA MÚLTIPLA: A posição da resposta certa TEM DE SER ALEATÓRIA (A, B, C ou D). Proibido usar maioritariamente B ou C.
+                        2. ESTRUTURA OFICIAL (MODELO 2025): Tens de respeitar EXATAMENTE a seguinte estrutura oficial do exame nacional desta disciplina:
+                        
+                        {estrutura_oficial}
 
                         ---
-                        No fim de gerado o exame, escreve a palavra-passe ===SOLUCOES=== e por baixo gera a CHAVE DE CORREÇÃO SUPER DETALHADA. 
-                        Na correção das escolhas múltiplas, lista a grelha de respostas (ex: 1-A, 2-D, 3-C...) para provar que usaste todas as letras. Para os cálculos, mostra as contas passo-a-passo.
+                        No fim do exame, escreve a palavra-passe ===SOLUCOES=== e por baixo gera a CHAVE DE CORREÇÃO SUPER DETALHADA.
+                        Na correção das escolhas múltiplas, lista a grelha (ex: 1-A, 2-D...). Nos desenvolvimentos, indica os tópicos que o aluno deveria abordar (critérios de correção do IAVE).
                         """
                         try:
                             resposta_exame = client.models.generate_content(model='gemini-2.5-flash', contents=prompt_exame)
                             texto_exame = resposta_exame.text.replace("🔸", "\n\n🔸").replace("\n---", "\n\n---\n")
                             
-                            # Grava na memória e arranca!
                             st.session_state.conteudo_exame = texto_exame
                             st.session_state.exame_iniciado = True
                             st.session_state.temas_atuais = temas_exame
-                            st.rerun() # Atualiza o ecrã para mostrar o relógio
+                            st.rerun()
                         except Exception as e:
                             st.error(f"Erro ao gerar exame: {e}")
                 else:
-                    st.warning("Tens de escrever os temas para o exame!")
+                    st.warning("Escreve os temas ou escolhe o Exame Global!")
 
         # 3. Modo Jogo (Exame a Decorrer)
         else:
-            # O Relógio Injetado em HTML (Fica vermelho e a contar para trás 100 minutos)
             components.html(
                 """
                 <div style="font-size: 30px; font-weight: bold; color: #FF4B4B; text-align: center; font-family: sans-serif; padding: 10px; border: 2px solid #FF4B4B; border-radius: 10px; background-color: #ffeaea;">
@@ -295,22 +358,18 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
             
             st.info(f"**Temas em teste:** {st.session_state.temas_atuais}")
             
-            # Mostra o exame
             if "===SOLUCOES===" in st.session_state.conteudo_exame:
                 partes = st.session_state.conteudo_exame.split("===SOLUCOES===")
                 st.markdown(partes[0])
                 
                 st.markdown("---")
-                # Apenas quando o aluno entrega é que vê as soluções
                 with st.expander("👀 ENTREGAR EXAME E VER CORREÇÃO"):
                     st.markdown(partes[1])
                     
                     if st.button("🏁 CONCLUIR E VOLTAR AO MENU", type="primary"):
                         st.success("Batalha Concluída! Ganhaste +500 XP!")
                         st.balloons()
-                        # Regista a vitória no Excel
                         guardar_no_excel("Boss Battle", st.session_state.temas_atuais, "Exame Concluído")
-                        # Faz reset à memória para poder jogar outro dia
                         st.session_state.exame_iniciado = False
                         st.session_state.conteudo_exame = ""
                         st.rerun()
@@ -337,7 +396,6 @@ elif aba_escolhida == "📚 Aprender (Resumos)":
                     resposta_resumo = client.models.generate_content(model='gemini-2.5-flash', contents=prompt_resumo)
                     st.markdown(resposta_resumo.text)
                     
-                    # 🔴 O ROBÔ GRAVA O RESUMO AQUI
                     guardar_no_excel("Resumo", tema_resumo, resposta_resumo.text)
                     
                 except Exception as e:
