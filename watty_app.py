@@ -6,6 +6,9 @@ import datetime
 import gspread
 from google.oauth2.service_account import Credentials
 import streamlit.components.v1 as components
+import pandas as pd
+import io
+import re
 
 # --- 1. A TUA CHAVE DE ACESSO ---
 os.environ["GEMINI_API_KEY"] = st.secrets["GEMINI_API_KEY"]
@@ -31,7 +34,7 @@ if "nome_aluno" not in st.session_state:
     # O st.stop() bloqueia o resto do site até o aluno se identificar
     st.stop()
 
-# --- 4. FUNÇÃO PARA GRAVAR NO GOOGLE SHEETS ---
+# --- 4. FUNÇÕES ÚTEIS (EXCEL E GRÁFICOS) ---
 def guardar_no_excel(aba, tema_pergunta, resposta_ia):
     try:
         scopes = [
@@ -53,8 +56,42 @@ def guardar_no_excel(aba, tema_pergunta, resposta_ia):
         folha.append_row([agora, nome, ano_escolhido, disciplina_escolhida, aba, tema_pergunta, resposta_ia])
         
     except Exception as e:
-        # Mostra erro no terminal mas não "cracha" o site para o aluno
         print(f"Erro ao gravar no Google Sheets: {e}")
+
+def exibir_com_graficos(texto_ia):
+    """Procura por dados de gráficos escondidos na resposta e desenha-os interativamente"""
+    padrao = r'\[GRAFICO\](.*?)\[/GRAFICO\]'
+    partes = re.split(padrao, texto_ia, flags=re.DOTALL)
+    
+    for i, parte in enumerate(partes):
+        if i % 2 == 0:
+            # Texto normal
+            if parte.strip():
+                st.markdown(parte)
+        else:
+            # Dados CSV gerados pela IA para fazer um gráfico
+            try:
+                dados_csv = parte.strip()
+                df = pd.read_csv(io.StringIO(dados_csv))
+                if len(df.columns) > 0:
+                    df.set_index(df.columns[0], inplace=True)
+                st.line_chart(df)
+            except Exception as e:
+                st.error("⚠️ [Erro ao processar o gráfico gerado pela IA]")
+
+# A Regra de Ouro anti-alucinações para injetar nos prompts
+REGRA_GRAFICOS = """
+⚠️ REGRA PARA GRÁFICOS: NUNCA inventes ou uses links de imagens externas (como imgur). 
+Se precisares de mostrar um gráfico de evolução, dados económicos, físicos ou matemáticos, fornece os dados num formato CSV simples, 
+SEMPRE envolvidos entre as tags [GRAFICO] e [/GRAFICO].
+Exemplo:
+[GRAFICO]
+Ano,Valor
+2020,1.5
+2021,4.0
+2022,8.1
+[/GRAFICO]
+"""
 
 # --- 5. MENU LATERAL ---
 st.sidebar.image("https://api.dicebear.com/7.x/bottts/svg?seed=Watty&backgroundColor=1CB0F6", width=100)
@@ -113,7 +150,10 @@ if aba_escolhida == "💬 Chat Socrático":
 
     for msg in st.session_state[chave_memoria]:
         with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
+            if msg["role"] == "assistant":
+                exibir_com_graficos(msg["content"])
+            else:
+                st.markdown(msg["content"])
 
     mensagem_aluno = st.chat_input("Escreve a tua dúvida aqui...")
 
@@ -132,6 +172,7 @@ if aba_escolhida == "💬 Chat Socrático":
 3. LINGUAGEM: Usa termos técnicos que aparecem nos manuais portugueses.
 4. MÉTODO SOCRÁTICO: Nunca dês a resposta de bandeja. Guia o aluno com perguntas.
 5. VISÃO: Se houver imagem, ajuda a decifrar o enunciado passo a passo.
+{REGRA_GRAFICOS}
             """
             
             conteudo_para_ia = [prompt_secreto]
@@ -147,10 +188,9 @@ if aba_escolhida == "💬 Chat Socrático":
 
             try:
                 resposta_ia = client.models.generate_content(model='gemini-2.5-flash', contents=conteudo_para_ia)
-                st.markdown(resposta_ia.text)
+                exibir_com_graficos(resposta_ia.text)
                 st.session_state[chave_memoria].append({"role": "assistant", "content": resposta_ia.text})
                 
-                # 🔴 O ROBÔ GRAVA O CHAT AQUI
                 guardar_no_excel("Chat", mensagem_aluno, resposta_ia.text)
                 
             except Exception as e:
@@ -160,7 +200,6 @@ if aba_escolhida == "💬 Chat Socrático":
 elif aba_escolhida == "🏋️ Treinar (Quizzes)":
     st.title(f"🏋️ Fábrica de Exercícios: {disciplina_escolhida}")
     
-    # Duas sub-abas para separar o treino da Batalha
     tab_rapido, tab_boss = st.tabs(["⚡ Treino Rápido (5 Perguntas)", "⚔️ Boss Battle (Exame 100 min)"])
 
     # --- ABA 1: TREINO RÁPIDO ---
@@ -184,6 +223,8 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
                     - **D)** [Opção]
                     ---
                     
+                    {REGRA_GRAFICOS}
+                    
                     No fim escreve a palavra-passe ===SOLUCOES=== e por baixo a chave de correção.
                     """
                     try:
@@ -192,11 +233,11 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
 
                         if "===SOLUCOES===" in texto_completo:
                             partes = texto_completo.split("===SOLUCOES===")
-                            st.markdown(partes[0])
+                            exibir_com_graficos(partes[0])
                             with st.expander("👀 Ver Chave de Correção e Explicações"):
-                                st.markdown(partes[1])
+                                exibir_com_graficos(partes[1])
                         else:
-                            st.markdown(texto_completo)
+                            exibir_com_graficos(texto_completo)
                             
                         guardar_no_excel("Quiz Rápido", tema_exercicios, texto_completo)
                             
@@ -210,13 +251,11 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
         st.markdown("### ⚔️ O Teste Final (Modelos IAVE 2025)")
         st.write("Mistura vários temas. O Watty vai gerar um Exame Simulado rigoroso com um relógio implacável de 100 minutos.")
 
-        # 1. Memória do Estado do Exame
         if "exame_iniciado" not in st.session_state:
             st.session_state.exame_iniciado = False
         if "conteudo_exame" not in st.session_state:
             st.session_state.conteudo_exame = ""
 
-        # 2. Modo Configuração
         if not st.session_state.exame_iniciado:
             tipo_exame = st.radio("Como queres configurar a tua Boss Battle?", 
                                   ["🎯 Temas Específicos", "🌍 Exame Global (Simulacro IAVE)"])
@@ -224,13 +263,12 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
             if tipo_exame == "🎯 Temas Específicos":
                 temas_exame = st.text_input(f"📚 Escreve os temas misturados (Ex: {exemplo_atual}):", key="input_boss")
             else:
-                # 🟢 O CÉREBRO DOS CICLOS DE EXAME
                 if disciplina_escolhida in ["Português", "Matemática A", "História A"]:
                     ciclo = "10º, 11º e 12º anos"
                 elif ano_escolhido in ["8º Ano", "9º Ano"]:
                     ciclo = "todo o 3º Ciclo (7º, 8º e 9º anos)"
                 else:
-                    ciclo = "10º e 11º anos" # Disciplinas Bienais (Economia, FQA, BG, etc.)
+                    ciclo = "10º e 11º anos"
                     
                 temas_exame = f"Todo o programa oficial das Aprendizagens Essenciais de {disciplina_escolhida} referente a todo o ciclo de exame ({ciclo})."
                 st.info(f"🚨 Prepara-te! Este modo vai testar TODA a matéria do ciclo ({ciclo}).")
@@ -239,7 +277,7 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
                 if tipo_exame == "🌍 Exame Global (Simulacro IAVE)" or (tipo_exame == "🎯 Temas Específicos" and temas_exame):
                     with st.spinner("A forjar a Boss Battle com o formato oficial do IAVE... Isto vai ser épico ⚔️"):
                         
-                        # 🟢 O CÉREBRO DAS ESTRUTURAS IAVE (2025)
+                        # 🟢 O CÉREBRO DAS ESTRUTURAS IAVE (2025) ESTÁ DE VOLTA!
                         estruturas_iave = {
                             "Economia": """
                             O exame tem um total de 22 itens, focado na nova estrutura do IAVE (16 obrigatórios + 6 opcionais):
@@ -309,7 +347,7 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
                             - A prova é composta por 4 Grupos (2 de Biologia, 2 de Geologia).
                             - Cada grupo DEVE começar com um texto descrevendo uma experiência, observação ou fenómeno.
                             - Após cada texto, gera várias perguntas de Escolha Múltipla e termina com 1 ou 2 perguntas de resposta restrita de relação de conceitos.
-                                                                Usa EXATAMENTE este molde:
+                                                                        Usa EXATAMENTE este molde:
                                     ### 📝 Pergunta [Número]
                                     **[Texto da Pergunta]**
                                     - **A)** [Opção]
@@ -321,7 +359,7 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
                             O exame tem um total de 23 itens (15 obrigatórios + 8 opcionais):
                             - Divide-se em situações problemáticas de Física e de Química (contextos experimentais).
                             - Mistura Escolhas Múltiplas e problemas de cálculo rigoroso (obriga à apresentação de todas as fórmulas e unidades do S.I.).
-                                                                Usa EXATAMENTE este molde:
+                                                                        Usa EXATAMENTE este molde:
                                     ### 📝 Pergunta [Número]
                                     **[Texto da Pergunta]**
                                     - **A)** [Opção]
@@ -332,7 +370,7 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
                             "História A": """
                             O exame tem um total de 14 itens (10 obrigatórios + 4 opcionais):
                             - GRUPO I e II: Apresenta textos históricos (fontes). Gera perguntas de escolha múltipla e respostas curtas baseadas na análise da fonte.
-                                                                Usa EXATAMENTE este molde:
+                                                                        Usa EXATAMENTE este molde:
                                     ### 📝 Pergunta [Número]
                                     **[Texto da Pergunta]**
                                     - **A)** [Opção]
@@ -346,7 +384,7 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
                             - Foco gigante em análise espacial.
                             - Descreve mapas, perfis topográficos ou gráficos e gera questões de Escolha Múltipla.
                             - Inclui perguntas de resposta restrita de análise crítica a problemas demográficos ou territoriais de Portugal.
-                                                                                        Usa EXATAMENTE este molde:
+                                                                                                        Usa EXATAMENTE este molde:
                                     ### 📝 Pergunta [Número]
                                     **[Texto da Pergunta]**
                                     - **A)** [Opção]
@@ -357,7 +395,7 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
                             "Filosofia": """
                             O exame tem um total de 18 itens (12 obrigatórios + 6 opcionais):
                             - GRUPO I: 10 a 12 perguntas de Escolha Múltipla (lógica, ética, epistemologia).
-                                                                                        Usa EXATAMENTE este molde:
+                                                                                                        Usa EXATAMENTE este molde:
                                     ### 📝 Pergunta [Número]
                                     **[Texto da Pergunta]**
                                     - **A)** [Opção]
@@ -375,7 +413,7 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
                             "Inglês": """
                             O exame testa a proficiência e compreensão:
                             - PART 1 (Reading): Apresenta um texto em inglês e faz 5 perguntas de Escolha Múltipla de interpretação.
-                                                                                        Usa EXATAMENTE este molde:
+                                                                                                        Usa EXATAMENTE este molde:
                                     ### 📝 Pergunta [Número]
                                     **[Texto da Pergunta]**
                                     - **A)** [Opção]
@@ -389,7 +427,7 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
 
                         estrutura_default = """
                         - GRUPO I: 10 perguntas de Escolha Múltipla.
-                                                                                    Usa EXATAMENTE este molde:
+                                                                                        Usa EXATAMENTE este molde:
                                     ### 📝 Pergunta [Número]
                                     **[Texto da Pergunta]**
                                     - **A)** [Opção]
@@ -411,6 +449,8 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
                         2. ESTRUTURA OFICIAL (MODELO 2025): Tens de respeitar EXATAMENTE a seguinte estrutura oficial do exame nacional desta disciplina:
                         
                         {estrutura_oficial}
+                        
+                        {REGRA_GRAFICOS}
 
                         ---
                         No fim do exame, escreve a palavra-passe ===SOLUCOES=== e por baixo gera a CHAVE DE CORREÇÃO SUPER DETALHADA.
@@ -429,7 +469,6 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
                 else:
                     st.warning("Escreve os temas ou escolhe o Exame Global!")
 
-        # 3. Modo Jogo (Exame a Decorrer)
         else:
             components.html(
                 """
@@ -452,11 +491,11 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
             
             if "===SOLUCOES===" in st.session_state.conteudo_exame:
                 partes = st.session_state.conteudo_exame.split("===SOLUCOES===")
-                st.markdown(partes[0])
+                exibir_com_graficos(partes[0])
                 
                 st.markdown("---")
                 with st.expander("👀 ENTREGAR EXAME E VER CORREÇÃO"):
-                    st.markdown(partes[1])
+                    exibir_com_graficos(partes[1])
                     
                     if st.button("🏁 CONCLUIR E VOLTAR AO MENU", type="primary"):
                         st.success("Batalha Concluída! Ganhaste +500 XP!")
@@ -466,7 +505,7 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
                         st.session_state.conteudo_exame = ""
                         st.rerun()
             else:
-                st.markdown(st.session_state.conteudo_exame)
+                exibir_com_graficos(st.session_state.conteudo_exame)
                 if st.button("Voltar atrás"):
                     st.session_state.exame_iniciado = False
                     st.rerun()
@@ -483,10 +522,12 @@ elif aba_escolhida == "📚 Aprender (Resumos)":
                 prompt_resumo = f"""
                 Cria um resumo sobre {tema_resumo} focado no programa de {disciplina_escolhida} do {ano_escolhido}.
                 Divide em: 1. O Conceito Central, 2. A Anatomia da Matéria, 3. Exemplo Prático, 4. Exceções, 5. Dica Ninja.
+                
+                {REGRA_GRAFICOS}
                 """
                 try:
                     resposta_resumo = client.models.generate_content(model='gemini-2.5-flash', contents=prompt_resumo)
-                    st.markdown(resposta_resumo.text)
+                    exibir_com_graficos(resposta_resumo.text)
                     
                     guardar_no_excel("Resumo", tema_resumo, resposta_resumo.text)
                     
