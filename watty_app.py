@@ -192,7 +192,7 @@ Ano,Valor
 # --- 5. MENU LATERAL ---
 # Como o watty.jpeg está no teu GitHub/pasta, o Streamlit apanha-o logo!
 try:
-    st.sidebar.image("WATTY.jpeg", use_container_width=True) 
+    st.sidebar.image("WATTY.jpg", use_container_width=True) 
 except FileNotFoundError:
     st.sidebar.error("⚠️ Imagem 'watty.jpeg' não encontrada. Verifica as maiúsculas e minúsculas!")
 
