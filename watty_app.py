@@ -113,23 +113,112 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 # 👆 AQUI ACABA A PARTE DO CSS 👆
-# --- 3. A PORTA DE ENTRADA (IDENTIFICAÇÃO) ---
-if "nome_aluno" not in st.session_state:
+# --- 3. A PORTA DE ENTRADA, GAMIFICAÇÃO E STREAKS ---
+if "logado" not in st.session_state:
+    st.session_state.logado = False
+
+# Função para ler o Excel e calcular a Streak
+def carregar_perfil(nome_aluno):
+    try:
+        scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+        credenciais = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scopes)
+        cliente = gspread.authorize(credenciais)
+        aba_perfis = cliente.open("Watty_Logs").worksheet("Perfis")
+        
+        registos = aba_perfis.get_all_records()
+        hoje = datetime.date.today()
+        
+        # Procura o aluno na lista
+        for i, linha in enumerate(registos):
+            if str(linha["Nome"]).strip().lower() == nome_aluno.strip().lower():
+                ultimo_login_str = str(linha["Ultimo_Login"])
+                streak_atual = int(linha["Streak"])
+                
+                # Calcular se ele ganha Streak ou se a perdeu
+                try:
+                    ultimo_login_data = datetime.datetime.strptime(ultimo_login_str, "%d/%m/%Y").date()
+                    diferenca_dias = (hoje - ultimo_login_data).days
+                    
+                    if diferenca_dias == 1:
+                        streak_atual += 1 # Entrou no dia seguinte, a chama continua!
+                    elif diferenca_dias > 1:
+                        streak_atual = 1 # Falhou mais de um dia, a chama apagou :(
+                except:
+                    streak_atual = 1
+                
+                # Grava a data de hoje no Excel
+                aba_perfis.update_cell(i + 2, 5, hoje.strftime("%d/%m/%Y"))
+                aba_perfis.update_cell(i + 2, 4, streak_atual)
+                
+                return int(linha["XP"]), int(linha["Nivel"]), streak_atual, i + 2 # Retorna a linha para atualizar o XP depois
+        
+        # Se o aluno não existir, cria um novo guerreiro!
+        aba_perfis.append_row([nome_aluno, 0, 1, 1, hoje.strftime("%d/%m/%Y")])
+        num_linhas = len(aba_perfis.get_all_values())
+        return 0, 1, 1, num_linhas
+        
+    except Exception as e:
+        print(f"Erro na BD: {e}")
+        return 0, 1, 1, 2 # Modo segurança caso o Excel falhe
+
+if not st.session_state.logado:
     st.title("⚡ Bem-vindo ao Watty!")
-    st.markdown("O teu tutor inteligente 24/7. Antes de começarmos, diz-me quem és:")
+    st.markdown("O teu tutor inteligente 24/7.")
     
-    nome_input = st.text_input("Qual é o teu Nome e Turma? (Ex: João Silva - 8ºB)")
+    nome_input = st.text_input("Qual é o teu Nome e Turma? (Ex: João - 8ºB)")
     
-    if st.button("Entrar no Watty 🚀"):
+    if st.button("Entrar no Jogo 🚀"):
         if nome_input.strip() != "":
-            st.session_state["nome_aluno"] = nome_input
-            st.rerun() # Recarrega a página para a versão completa
+            with st.spinner("A carregar o teu progresso na cloud... ☁️"):
+                xp_bd, nivel_bd, streak_bd, linha_bd = carregar_perfil(nome_input)
+                
+                st.session_state.logado = True
+                st.session_state["nome_aluno"] = nome_input
+                st.session_state.xp = xp_bd
+                st.session_state.nivel = nivel_bd
+                st.session_state.streak = streak_bd
+                st.session_state.linha_bd = linha_bd
+                st.rerun() 
         else:
-            st.warning("⚠️ Epa, não te esqueças de escrever o teu nome para eu saber quem és!")
-            
-    # O st.stop() bloqueia o resto do site até o aluno se identificar
+            st.warning("⚠️ Epa, não te esqueças de escrever o teu nome!")
     st.stop()
 
+# --- FUNÇÃO DE GAMEPLAY (GANHAR XP E GRAVAR NO EXCEL) ---
+def acao_jogo(ganho_xp, motivo):
+    st.session_state.xp += ganho_xp
+    
+    # Subir de nível
+    novo_nivel = (st.session_state.xp // 200) + 1
+    if novo_nivel > st.session_state.nivel:
+        st.session_state.nivel = novo_nivel
+        st.toast(f"🎉 SUBISTE PARA O NÍVEL {novo_nivel}!", icon="🔥")
+        st.balloons()
+    
+    st.toast(f"+{ganho_xp} XP ({motivo})", icon="🎮")
+    
+    # Grava no Excel silenciosamente em pano de fundo
+    try:
+        scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+        credenciais = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scopes)
+        cliente = gspread.authorize(credenciais)
+        aba_perfis = cliente.open("Watty_Logs").worksheet("Perfis")
+        aba_perfis.update_cell(st.session_state.linha_bd, 2, st.session_state.xp)
+        aba_perfis.update_cell(st.session_state.linha_bd, 3, st.session_state.nivel)
+    except:
+        pass
+
+# --- O NOVO HUD (COM A CHAMA DA STREAK 🔥) ---
+col1, col2, col3, col4 = st.columns(4)
+with col1:
+    st.metric(label="👤 Jogador", value=st.session_state["nome_aluno"])
+with col2:
+    st.metric(label="🔰 Nível", value=f"Nvl {st.session_state.nivel}")
+with col3:
+    st.metric(label="🏆 XP", value=f"{st.session_state.xp}")
+with col4:
+    st.metric(label="🔥 Streak", value=f"{st.session_state.streak} Dias")
+
+st.markdown("---")
 # --- 4. FUNÇÕES ÚTEIS (EXCEL E GRÁFICOS) ---
 def guardar_no_excel(aba, tema_pergunta, resposta_ia):
     try:
