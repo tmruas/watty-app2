@@ -14,96 +14,105 @@ import re
 os.environ["GEMINI_API_KEY"] = st.secrets["GEMINI_API_KEY"]
 client = genai.Client()
 
-# --- 2. CONFIGURAÇÃO DA PÁGINA ---
 # --- 2. CONFIGURAÇÃO DA PÁGINA E ESTILO GAMIFICADO (UI/UX) ---
 st.set_page_config(page_title="Watty | O teu Tutor Inteligente", page_icon="⚡", layout="wide")
 
-# 🎨 A MAGIA DO CSS (O Hack do Duolingo)
+# 👇 AQUI COMEÇA A PARTE DO CSS 👇
 st.markdown("""
     <style>
-    /* Fundo da App mais limpo (Cinza super claro) */
+    /* 1. O Fundo Principal (Lavanda/Lilás Watty) */
     .stApp {
-        background-color: #F9FAFB;
+        background-color: #E6DDF5; /* A cor exata dos teus mockups! */
+    }
+    
+    /* Remove a barra superior cinzenta do Streamlit */
+    .stApp > header {
+        background-color: transparent;
     }
 
-    /* 🎮 BOTÕES GAMIFICADOS (O Efeito 3D) */
+    /* 2. Menu Lateral (Branco com borda e sombra suave) */
+    [data-testid="stSidebar"] {
+        background-color: #FFFFFF !important;
+        border-right: 3px solid #D1C4E9;
+        box-shadow: 2px 0px 15px rgba(0,0,0,0.05);
+    }
+    
+    /* Letras e Títulos do Menu Lateral num Roxo Escuro */
+    [data-testid="stSidebar"] * {
+        color: #4A148C !important;
+        font-weight: 600;
+    }
+
+    /* 3. Botões Principais (Chunky Roxo/Magenta) */
     div.stButton > button:first-child {
-        background-color: #D81B60; /* O Magenta do Watty */
+        background-color: #9C27B0; /* Roxo Principal Watty */
         color: white !important;
         font-weight: 900 !important;
         font-size: 18px !important;
         border-radius: 16px;
-        border: 2px solid #A01447; /* Borda escura para dar profundidade */
-        box-shadow: 0px 6px 0px #A01447; /* A base do botão (3D) */
+        border: 2px solid #7B1FA2;
+        box-shadow: 0px 6px 0px #7B1FA2;
         padding: 10px 24px;
-        transition: all 0.1s ease; /* Transição super rápida */
+        transition: all 0.1s ease;
         text-transform: uppercase;
         letter-spacing: 1px;
     }
-    
-    /* 🖱️ O CLIQUE (Animação de afundar o botão) */
     div.stButton > button:first-child:active {
-        box-shadow: 0px 0px 0px #A01447; /* A sombra desaparece */
-        transform: translateY(6px); /* O botão desce */
+        box-shadow: 0px 0px 0px #7B1FA2;
+        transform: translateY(6px);
     }
-
-    /* Hover (Quando o rato passa por cima) */
     div.stButton > button:first-child:hover {
-        background-color: #E91E63;
-        border-color: #C2185B;
+        background-color: #AB47BC;
     }
 
-    /* 🏆 CAIXAS DO HUD (As métricas no topo) */
+    /* 4. Caixas do HUD (Brancas para destacar no fundo Lavanda) */
     div[data-testid="metric-container"] {
         background-color: #FFFFFF;
-        border: 2px solid #E5E7EB;
+        border: 2px solid #D1C4E9;
         border-radius: 16px;
         padding: 15px;
-        border-bottom: 5px solid #FFC107; /* A cor do Relâmpago do Watty */
-        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        border-bottom: 5px solid #FFC107; /* O Amarelo Relâmpago do Logo */
+        box-shadow: 0 4px 10px rgba(156, 39, 176, 0.1);
         text-align: center;
     }
     
-    /* Letras do HUD */
+    /* Textos do HUD */
     div[data-testid="metric-container"] label {
         font-weight: 800;
-        color: #6B7280;
+        color: #7B1FA2; /* Roxo médio */
         font-size: 14px;
         text-transform: uppercase;
     }
-
-    /* Números do HUD */
     div[data-testid="metric-container"] div[data-testid="stMetricValue"] {
         font-weight: 900;
-        color: #111827;
+        color: #4A148C; /* Roxo muito escuro */
         font-size: 32px;
     }
 
-    /* ⌨️ CAIXAS DE TEXTO (Inputs) MAIS AMIGÁVEIS */
+    /* 5. Títulos Principais (Roxo Escuro para máxima leitura) */
+    h1, h2, h3 {
+        color: #4A148C !important;
+        font-weight: 900 !important;
+        letter-spacing: -0.5px;
+    }
+
+    /* 6. Caixas de Texto (Inputs) */
     .stTextInput input, .stTextArea textarea {
         border-radius: 16px;
-        border: 2px solid #E5E7EB;
+        border: 2px solid #D1C4E9;
         padding: 14px;
         font-size: 16px;
         font-weight: 500;
-        box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        background-color: #FFFFFF;
+        color: #4A148C;
     }
-    
-    /* Quando o aluno clica para escrever (Foco) */
     .stTextInput input:focus, .stTextArea textarea:focus {
-        border-color: #FFC107; /* Fica amarelo relâmpago */
-        box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.2);
-    }
-
-    /* Títulos da App com mais impacto */
-    h1, h2, h3 {
-        font-weight: 900 !important;
-        letter-spacing: -0.5px;
-        color: #1F2937;
+        border-color: #FFC107;
+        box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.3);
     }
     </style>
 """, unsafe_allow_html=True)
-
+# 👆 AQUI ACABA A PARTE DO CSS 👆
 # --- 3. A PORTA DE ENTRADA (IDENTIFICAÇÃO) ---
 if "nome_aluno" not in st.session_state:
     st.title("⚡ Bem-vindo ao Watty!")
