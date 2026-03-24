@@ -190,9 +190,14 @@ Ano,Valor
 """
 
 # --- 5. MENU LATERAL ---
-st.sidebar.image("https://api.dicebear.com/7.x/bottts/svg?seed=Watty&backgroundColor=1CB0F6", width=100)
+# Como o watty.jpeg está no teu GitHub/pasta, o Streamlit apanha-o logo!
+try:
+    st.sidebar.image("WATTY.jpeg", use_container_width=True) 
+except FileNotFoundError:
+    st.sidebar.error("⚠️ Imagem 'watty.jpeg' não encontrada. Verifica as maiúsculas e minúsculas!")
+
 st.sidebar.title("⚡ Menu do Watty")
-st.sidebar.success(f"👤 Olá, {st.session_state['nome_aluno']}!")
+st.sidebar.success(f"👤 Olá, {st.session_state.get('nome_aluno', 'Pioneiro')}!")
 
 lista_anos = ["8º Ano", "9º Ano", "10º Ano", "11º Ano", "12º Ano"]
 ano_escolhido = st.sidebar.selectbox("🎓 Escolhe o Ano:", lista_anos)
