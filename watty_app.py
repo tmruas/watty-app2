@@ -15,7 +15,94 @@ os.environ["GEMINI_API_KEY"] = st.secrets["GEMINI_API_KEY"]
 client = genai.Client()
 
 # --- 2. CONFIGURAÇÃO DA PÁGINA ---
-st.set_page_config(page_title="Watty | O teu Tutor Inteligente", page_icon="⚡", layout="centered")
+# --- 2. CONFIGURAÇÃO DA PÁGINA E ESTILO GAMIFICADO (UI/UX) ---
+st.set_page_config(page_title="Watty | O teu Tutor Inteligente", page_icon="⚡", layout="wide")
+
+# 🎨 A MAGIA DO CSS (O Hack do Duolingo)
+st.markdown("""
+    <style>
+    /* Fundo da App mais limpo (Cinza super claro) */
+    .stApp {
+        background-color: #F9FAFB;
+    }
+
+    /* 🎮 BOTÕES GAMIFICADOS (O Efeito 3D) */
+    div.stButton > button:first-child {
+        background-color: #D81B60; /* O Magenta do Watty */
+        color: white !important;
+        font-weight: 900 !important;
+        font-size: 18px !important;
+        border-radius: 16px;
+        border: 2px solid #A01447; /* Borda escura para dar profundidade */
+        box-shadow: 0px 6px 0px #A01447; /* A base do botão (3D) */
+        padding: 10px 24px;
+        transition: all 0.1s ease; /* Transição super rápida */
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    /* 🖱️ O CLIQUE (Animação de afundar o botão) */
+    div.stButton > button:first-child:active {
+        box-shadow: 0px 0px 0px #A01447; /* A sombra desaparece */
+        transform: translateY(6px); /* O botão desce */
+    }
+
+    /* Hover (Quando o rato passa por cima) */
+    div.stButton > button:first-child:hover {
+        background-color: #E91E63;
+        border-color: #C2185B;
+    }
+
+    /* 🏆 CAIXAS DO HUD (As métricas no topo) */
+    div[data-testid="metric-container"] {
+        background-color: #FFFFFF;
+        border: 2px solid #E5E7EB;
+        border-radius: 16px;
+        padding: 15px;
+        border-bottom: 5px solid #FFC107; /* A cor do Relâmpago do Watty */
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        text-align: center;
+    }
+    
+    /* Letras do HUD */
+    div[data-testid="metric-container"] label {
+        font-weight: 800;
+        color: #6B7280;
+        font-size: 14px;
+        text-transform: uppercase;
+    }
+
+    /* Números do HUD */
+    div[data-testid="metric-container"] div[data-testid="stMetricValue"] {
+        font-weight: 900;
+        color: #111827;
+        font-size: 32px;
+    }
+
+    /* ⌨️ CAIXAS DE TEXTO (Inputs) MAIS AMIGÁVEIS */
+    .stTextInput input, .stTextArea textarea {
+        border-radius: 16px;
+        border: 2px solid #E5E7EB;
+        padding: 14px;
+        font-size: 16px;
+        font-weight: 500;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    }
+    
+    /* Quando o aluno clica para escrever (Foco) */
+    .stTextInput input:focus, .stTextArea textarea:focus {
+        border-color: #FFC107; /* Fica amarelo relâmpago */
+        box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.2);
+    }
+
+    /* Títulos da App com mais impacto */
+    h1, h2, h3 {
+        font-weight: 900 !important;
+        letter-spacing: -0.5px;
+        color: #1F2937;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 # --- 3. A PORTA DE ENTRADA (IDENTIFICAÇÃO) ---
 if "nome_aluno" not in st.session_state:
