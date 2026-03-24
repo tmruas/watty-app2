@@ -17,12 +17,12 @@ client = genai.Client()
 # --- 2. CONFIGURAÇÃO DA PÁGINA E ESTILO GAMIFICADO (UI/UX) ---
 st.set_page_config(page_title="Watty | O teu Tutor Inteligente", page_icon="⚡", layout="wide")
 
-# 👇 AQUI COMEÇA A PARTE DO CSS 👇
+# 🎨 A MAGIA DO CSS (Cores Oficiais Watty baseadas no Design)
 st.markdown("""
     <style>
     /* 1. O Fundo Principal (Lavanda/Lilás Watty) */
     .stApp {
-        background-color: #E6DDF5; /* A cor exata dos teus mockups! */
+        background-color: #E6DDF5; 
     }
     
     /* Remove a barra superior cinzenta do Streamlit */
@@ -30,14 +30,19 @@ st.markdown("""
         background-color: transparent;
     }
 
-    /* 2. Menu Lateral (Branco com borda e sombra suave) */
+    /* 🚨 A CORREÇÃO DOS TELEMÓVEIS (Forçar texto a escuro) 🚨 */
+    .stMarkdown p, .stMarkdown li, p, label, .stRadio label {
+        color: #311B52 !important; /* Roxo muito escuro, quase preto, perfeito para ler */
+        font-weight: 500;
+    }
+
+    /* 2. Menu Lateral */
     [data-testid="stSidebar"] {
         background-color: #FFFFFF !important;
         border-right: 3px solid #D1C4E9;
         box-shadow: 2px 0px 15px rgba(0,0,0,0.05);
     }
     
-    /* Letras e Títulos do Menu Lateral num Roxo Escuro */
     [data-testid="stSidebar"] * {
         color: #4A148C !important;
         font-weight: 600;
@@ -45,8 +50,8 @@ st.markdown("""
 
     /* 3. Botões Principais (Chunky Roxo/Magenta) */
     div.stButton > button:first-child {
-        background-color: #9C27B0; /* Roxo Principal Watty */
-        color: white !important;
+        background-color: #9C27B0 !important; 
+        color: white !important; /* O botão continua a ter letras brancas! */
         font-weight: 900 !important;
         font-size: 18px !important;
         border-radius: 16px;
@@ -62,34 +67,33 @@ st.markdown("""
         transform: translateY(6px);
     }
     div.stButton > button:first-child:hover {
-        background-color: #AB47BC;
+        background-color: #AB47BC !important;
     }
 
-    /* 4. Caixas do HUD (Brancas para destacar no fundo Lavanda) */
+    /* 4. Caixas do HUD */
     div[data-testid="metric-container"] {
         background-color: #FFFFFF;
         border: 2px solid #D1C4E9;
         border-radius: 16px;
         padding: 15px;
-        border-bottom: 5px solid #FFC107; /* O Amarelo Relâmpago do Logo */
+        border-bottom: 5px solid #FFC107; 
         box-shadow: 0 4px 10px rgba(156, 39, 176, 0.1);
         text-align: center;
     }
     
-    /* Textos do HUD */
     div[data-testid="metric-container"] label {
         font-weight: 800;
-        color: #7B1FA2; /* Roxo médio */
+        color: #7B1FA2 !important; 
         font-size: 14px;
         text-transform: uppercase;
     }
     div[data-testid="metric-container"] div[data-testid="stMetricValue"] {
         font-weight: 900;
-        color: #4A148C; /* Roxo muito escuro */
+        color: #4A148C !important; 
         font-size: 32px;
     }
 
-    /* 5. Títulos Principais (Roxo Escuro para máxima leitura) */
+    /* 5. Títulos Principais */
     h1, h2, h3 {
         color: #4A148C !important;
         font-weight: 900 !important;
@@ -102,9 +106,9 @@ st.markdown("""
         border: 2px solid #D1C4E9;
         padding: 14px;
         font-size: 16px;
-        font-weight: 500;
-        background-color: #FFFFFF;
-        color: #4A148C;
+        font-weight: 600;
+        background-color: #FFFFFF !important;
+        color: #4A148C !important; /* Texto que o aluno escreve fica escuro */
     }
     .stTextInput input:focus, .stTextArea textarea:focus {
         border-color: #FFC107;
@@ -112,7 +116,6 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
-# 👆 AQUI ACABA A PARTE DO CSS 👆
 # --- 3. A PORTA DE ENTRADA, GAMIFICAÇÃO E STREAKS ---
 if "logado" not in st.session_state:
     st.session_state.logado = False
