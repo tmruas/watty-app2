@@ -398,7 +398,7 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
 
     # --- ABA 1: TREINO RÁPIDO (AGORA 100% INTERATIVO 🎮) ---
     with tab_rapido:
-    st.markdown("### Treino Rápido para aquecer! 🔥")
+    st.markdown("Treino Rápido para aquecer! 🔥")
 
     col_input, col_btn = st.columns([3, 1])
     with col_input:
