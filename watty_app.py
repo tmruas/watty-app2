@@ -398,20 +398,20 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
 
     # --- ABA 1: TREINO RÁPIDO (AGORA 100% INTERATIVO 🎮) ---
     with tab_rapido:
-    st.markdown("Treino Rápido para aquecer! 🔥")
-
-    col_input, col_btn = st.columns([3, 1])
-    with col_input:
-        tema_exercicios = st.text_input(f"O que queres treinar? (Ex: {exemplo_atual})", key="input_rapido")
-    with col_btn:
-        st.write(""); st.write("")
-        btn_gerar = st.button("Gerar Nível ⚙️", use_container_width=True)
-
-    if btn_gerar and tema_exercicios:
-        with st.spinner("O Watty está a forjar o teu nível... 🛠️"):
-            prompt_treino = f"""
-            Cria um quiz misto de 6 perguntas sobre: {tema_exercicios} para o {ano_escolhido} de {disciplina_escolhida}.
-            
+        st.markdown("Treino Rápido para aquecer! 🔥")
+    
+        col_input, col_btn = st.columns([3, 1])
+        with col_input:
+            tema_exercicios = st.text_input(f"O que queres treinar? (Ex: {exemplo_atual})", key="input_rapido")
+        with col_btn:
+            st.write(""); st.write("")
+            btn_gerar = st.button("Gerar Nível ⚙️", use_container_width=True)
+    
+        if btn_gerar and tema_exercicios:
+            with st.spinner("O Watty está a forjar o teu nível... 🛠️"):
+                prompt_treino = f"""
+                Cria um quiz misto de 6 perguntas sobre: {tema_exercicios} para o {ano_escolhido} de {disciplina_escolhida}.
+                
             Distribui assim:
             - 3 perguntas de Escolha Múltipla (tipo "multipla_escolha")
             - 1 pergunta de Resposta Curta (tipo "resposta_curta") — 1 a 3 linhas
