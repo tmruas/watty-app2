@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+import json
 from google import genai
 from PIL import Image
 import datetime
@@ -395,49 +396,102 @@ elif aba_escolhida == "🏋️ Treinar (Quizzes)":
     
     tab_rapido, tab_boss = st.tabs(["⚡ Treino Rápido (5 Perguntas)", "⚔️ Boss Battle (Exame 100 min)"])
 
-    # --- ABA 1: TREINO RÁPIDO ---
+    # --- ABA 1: TREINO RÁPIDO (AGORA 100% INTERATIVO 🎮) ---
     with tab_rapido:
         st.markdown("### Treino Rápido para aquecer! 🔥")
-        tema_exercicios = st.text_input(f"Qual é o tema que queres treinar? (Ex: {exemplo_atual})", key="input_rapido")
         
-        if st.button("Gerar Exercícios ⚙️", key="btn_rapido"):
+        col_input, col_btn = st.columns([3, 1])
+        with col_input:
+            tema_exercicios = st.text_input(f"O que queres treinar? (Ex: {exemplo_atual})", key="input_rapido")
+        with col_btn:
+            st.write("") # Espaço para alinhar
+            st.write("")
+            btn_gerar = st.button("Gerar Nível ⚙️", use_container_width=True)
+
+        # 1. GERAR O QUIZ E GUARDAR NA MEMÓRIA
+        if btn_gerar:
             if tema_exercicios:
-                with st.spinner("O Watty está a desenhar os exercícios... 🛠️"):
+                with st.spinner("O Watty está a forjar o teu nível... 🛠️"):
+                    # O Prompt agora obriga a IA a falar em "Código JSON"
                     prompt_treino = f"""
-                    Cria um teste de 5 perguntas sobre: {tema_exercicios} para o {ano_escolhido} de {disciplina_escolhida}.
-                    Inclui 3 de Escolha Múltipla e 2 Abertas. A resposta correta da escolha múltipla deve ser aleatoriamente distribuída, não coloques apenas as opções B e C como corretas.
-                    
-                    Usa EXATAMENTE este molde:
-                    ### 📝 Pergunta [Número]
-                    **[Texto da Pergunta]**
-                    - **A)** [Opção]
-                    - **B)** [Opção]
-                    - **C)** [Opção]
-                    - **D)** [Opção]
-                    ---
-                    
-                    {REGRA_GRAFICOS}
-                    
-                    No fim escreve a palavra-passe ===SOLUCOES=== e por baixo a chave de correção.
+                    Cria um teste de 5 perguntas de Escolha Múltipla sobre: {tema_exercicios} para o {ano_escolhido} de {disciplina_escolhida}.
+                    OBRIGATÓRIO: Devolve APENAS um array JSON válido. Sem formatação markdown, sem texto antes ou depois.
+                    Usa EXATAMENTE esta estrutura:
+                    [
+                      {{
+                        "pergunta": "Texto da pergunta",
+                        "opcoes": ["Opção A", "Opção B", "Opção C", "Opção D"],
+                        "resposta_correta": "Opção A",
+                        "explicacao": "Explicação curta do porquê."
+                      }}
+                    ]
+                    A resposta correta tem de ser exatamente igual à string da opção. As opções corretas devem ser aleatórias.
                     """
                     try:
                         resposta_treino = client.models.generate_content(model='gemini-2.5-flash', contents=prompt_treino)
-                        texto_completo = resposta_treino.text.replace("🔸", "\n\n🔸").replace("\n---", "\n\n---\n")
-
-                        if "===SOLUCOES===" in texto_completo:
-                            partes = texto_completo.split("===SOLUCOES===")
-                            exibir_com_graficos(partes[0])
-                            with st.expander("👀 Ver Chave de Correção e Explicações"):
-                                exibir_com_graficos(partes[1])
-                        else:
-                            exibir_com_graficos(texto_completo)
-                            
-                        guardar_no_excel("Quiz Rápido", tema_exercicios, texto_completo)
+                        
+                        # Limpar a resposta da IA para garantir que é JSON puro
+                        texto_limpo = resposta_treino.text.replace("```json", "").replace("```", "").strip()
+                        import json
+                        quiz_data = json.loads(texto_limpo)
+                        
+                        # Guardar o quiz na sessão para ele não desaparecer quando clicarmos!
+                        st.session_state.quiz_atual = quiz_data
+                        st.session_state.respostas_aluno = {} # Limpa respostas antigas
+                        st.session_state.quiz_avaliado = False
+                        st.rerun()
                             
                     except Exception as e:
-                        st.error(f"Erro: {e}")
+                        st.error(f"⚠️ Erro ao gerar os exercícios. Tenta outro tema. (Erro interno: {e})")
             else:
-                st.warning("Escreve um tema!")
+                st.warning("Escreve um tema primeiro!")
+
+        # 2. MOSTRAR O QUIZ INTERATIVO (Se houver um quiz na memória)
+        if "quiz_atual" in st.session_state and st.session_state.quiz_atual:
+            st.markdown("---")
+            st.markdown(f"#### 🎯 Missão: {tema_exercicios}")
+            
+            # Desenhar as perguntas como Radio Buttons interativos
+            for i, q in enumerate(st.session_state.quiz_atual):
+                st.markdown(f"**{i+1}. {q['pergunta']}**")
+                
+                # Se já foi avaliado, bloqueia as opções (disabled=True)
+                st.session_state.respostas_aluno[i] = st.radio(
+                    "Escolhe a tua resposta:", 
+                    q['opcoes'], 
+                    key=f"q_{i}", 
+                    disabled=st.session_state.get("quiz_avaliado", False),
+                    label_visibility="collapsed"
+                )
+                st.markdown("<br>", unsafe_allow_html=True) # Espaçamento
+
+            # 3. O BOTÃO DE AVALIAÇÃO (A Hora da Verdade)
+            if not st.session_state.get("quiz_avaliado", False):
+                if st.button("Verificar Respostas ✅", type="primary", use_container_width=True):
+                    acertos = 0
+                    
+                    # Mostrar resultados visuais
+                    for i, q in enumerate(st.session_state.quiz_atual):
+                        resposta_dada = st.session_state.respostas_aluno[i]
+                        if resposta_dada == q['resposta_correta']:
+                            st.success(f"**Pergunta {i+1}:** ACERTASTE! 🎉")
+                            acertos += 1
+                        else:
+                            st.error(f"**Pergunta {i+1}:** ERRASTE. ❌ A correta era: **{q['resposta_correta']}**")
+                        
+                        st.info(f"💡 **Watty diz:** {q['explicacao']}")
+                    
+                    # Dar o XP com base nos acertos (ex: 20 XP por cada resposta certa)
+                    xp_ganho = acertos * 20
+                    st.session_state.quiz_avaliado = True # Bloqueia o quiz para não repetir
+                    
+                    if acertos > 0:
+                        acao_jogo(ganho_xp=xp_ganho, motivo=f"Quiz ({acertos}/5)")
+                        st.balloons()
+                    else:
+                        st.toast("Não ganhaste XP. Tenta de novo!", icon="💔")
+                        
+                    st.button("Fazer outro treino 🔄", on_click=lambda: st.session_state.pop("quiz_atual"))
 
     # --- ABA 2: BOSS BATTLE (SIMULADOR DE EXAMES 2025) ---
     with tab_boss:
