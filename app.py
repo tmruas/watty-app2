@@ -1,4 +1,9 @@
-"""Ponto de entrada Streamlit — Watty."""
+"""Ponto de entrada Streamlit — Watty.
+
+Antes do primeiro `streamlit run`, compila o onboarding React:
+`cd watty_login_wizard/frontend && npm ci && npm run build`
+(ver README.md).
+"""
 
 import streamlit as st
 

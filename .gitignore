@@ -4,3 +4,7 @@ __pycache__/
 venv/
 .env
 .streamlit/secrets.toml
+
+# Login wizard (npm)
+watty_login_wizard/frontend/node_modules/
+watty_login_wizard/frontend/build/

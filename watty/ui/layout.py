@@ -4,6 +4,7 @@ import streamlit as st
 
 from watty.config import LISTA_ANOS, disciplinas_para_ano, exemplo_para_disciplina
 from watty.services.sheets import carregar_perfil
+from watty_login_wizard import render_login_wizard
 
 ABAS = ["💬 Chat Socrático", "🏋️ Treinar (Quizzes)", "📚 Aprender (Resumos)"]
 
@@ -14,31 +15,39 @@ def init_session_state() -> None:
 
 
 def render_login_gate() -> None:
-    st.title("⚡ Bem-vindo ao Watty!")
-    st.markdown("O teu tutor inteligente 24/7.")
+    resultado = render_login_wizard(key="watty_login_wizard")
+    if not resultado or not isinstance(resultado, dict):
+        return
 
-    nome_input = st.text_input("Qual é o teu Nome e Turma? (Ex: João - 8ºB)")
+    nome = str(resultado.get("nome", "")).strip()
+    idade = str(resultado.get("idade", "")).strip()
+    escola_turma = str(resultado.get("escola_turma", "")).strip()
+    if not nome or not idade or not escola_turma:
+        st.warning("⚠️ Completa todos os passos para entrares.")
+        return
 
-    if st.button("Entrar no Jogo 🚀"):
-        if nome_input.strip() != "":
-            with st.spinner("A carregar o teu progresso na cloud... ☁️"):
-                xp_bd, nivel_bd, streak_bd, linha_bd = carregar_perfil(nome_input)
+    nome_aluno = f"{nome} | {idade} | {escola_turma}"
 
-                st.session_state.logado = True
-                st.session_state["nome_aluno"] = nome_input
-                st.session_state.xp = xp_bd
-                st.session_state.nivel = nivel_bd
-                st.session_state.streak = streak_bd
-                st.session_state.linha_bd = linha_bd
-                st.rerun()
-        else:
-            st.warning("⚠️ Epa, não te esqueças de escrever o teu nome!")
+    with st.spinner("A carregar o teu progresso na cloud... ☁️"):
+        xp_bd, nivel_bd, streak_bd, linha_bd = carregar_perfil(nome_aluno)
+
+        st.session_state.logado = True
+        st.session_state["nome_aluno"] = nome_aluno
+        st.session_state["nome_display"] = nome
+        st.session_state.xp = xp_bd
+        st.session_state.nivel = nivel_bd
+        st.session_state.streak = streak_bd
+        st.session_state.linha_bd = linha_bd
+    st.rerun()
 
 
 def render_hud_metrics() -> None:
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric(label="👤 Jogador", value=st.session_state["nome_aluno"])
+        st.metric(
+            label="👤 Jogador",
+            value=st.session_state.get("nome_display") or st.session_state["nome_aluno"],
+        )
     with col2:
         st.metric(label="🔰 Nível", value=f"Nvl {st.session_state.nivel}")
     with col3:
@@ -62,7 +71,8 @@ def render_sidebar():
         )
 
     st.sidebar.title("⚡ Menu do Watty")
-    st.sidebar.success(f"👤 Olá, {st.session_state.get('nome_aluno', 'Pioneiro')}!")
+    _ola = st.session_state.get("nome_display") or st.session_state.get("nome_aluno", "Pioneiro")
+    st.sidebar.success(f"👤 Olá, {_ola}!")
 
     ano_escolhido = st.sidebar.selectbox("🎓 Escolhe o Ano:", LISTA_ANOS)
 
