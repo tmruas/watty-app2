@@ -16,7 +16,12 @@ os.environ["GEMINI_API_KEY"] = st.secrets["GEMINI_API_KEY"]
 client = genai.Client()
 
 # --- 2. CONFIGURAÇÃO DA PÁGINA E ESTILO GAMIFICADO (UI/UX) ---
-st.set_page_config(page_title="Watty | O teu Tutor Inteligente", page_icon="⚡", layout="wide")
+st.set_page_config(
+    page_title="Watty | O teu Tutor Inteligente",
+    page_icon="⚡",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
 
 # 🎨 A MAGIA DO CSS (Cores Oficiais Watty baseadas no Design)
 st.markdown("""
@@ -29,6 +34,13 @@ st.markdown("""
     /* Remove a barra superior cinzenta do Streamlit */
     .stApp > header {
         background-color: transparent;
+    }
+
+    /* Garante visibilidade e toque do botão hamburger */
+    [data-testid="collapsedControl"] {
+        display: flex !important;
+        visibility: visible !important;
+        z-index: 1001;
     }
 
     /* 🚨 A CORREÇÃO DOS TELEMÓVEIS (Forçar texto a escuro) 🚨 */
@@ -114,6 +126,85 @@ st.markdown("""
     .stTextInput input:focus, .stTextArea textarea:focus {
         border-color: #FFC107;
         box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.3);
+    }
+
+    /* 7. Utilitários estilo Tailwind (mobile-first) */
+    .tw-w-full { width: 100% !important; }
+    .tw-h-auto { height: auto !important; }
+    .tw-object-contain { object-fit: contain; }
+    .tw-aspect-video { aspect-ratio: 16 / 9; }
+    .tw-aspect-square { aspect-ratio: 1 / 1; }
+    .tw-max-w-full { max-width: 100% !important; }
+
+    /* Aplica utilitários de ratio/responsividade aos componentes Streamlit */
+    [data-testid="stImage"] img {
+        width: 100% !important;
+        height: auto !important;
+        object-fit: contain;
+    }
+
+    iframe, video {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: auto !important;
+        aspect-ratio: 16 / 9;
+    }
+
+    /* 8. Breakpoints tipo Tailwind (md: 768px, sm: 640px aproximado) */
+    @media (max-width: 768px) {
+        .block-container {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+        }
+
+        [data-testid="stSidebar"] {
+            width: min(86vw, 340px) !important;
+            min-width: min(86vw, 340px) !important;
+        }
+
+        /* Evita cards espremidos e mantém proporção legível */
+        [data-testid="stHorizontalBlock"] {
+            gap: 0.75rem;
+        }
+
+        [data-testid="column"] {
+            min-width: calc(50% - 0.5rem) !important;
+        }
+
+        div.stButton > button:first-child {
+            width: 100%;
+            font-size: 16px !important;
+            padding: 10px 14px;
+        }
+
+        div[data-testid="metric-container"] {
+            padding: 10px;
+        }
+
+        div[data-testid="metric-container"] div[data-testid="stMetricValue"] {
+            font-size: 24px;
+        }
+
+        .stTextInput input, .stTextArea textarea {
+            font-size: 15px;
+            padding: 12px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        h1 {
+            font-size: 1.6rem !important;
+        }
+        h2 {
+            font-size: 1.35rem !important;
+        }
+        h3 {
+            font-size: 1.15rem !important;
+        }
+
+        [data-testid="column"] {
+            min-width: 100% !important;
+        }
     }
     </style>
 """, unsafe_allow_html=True)
