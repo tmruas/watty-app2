@@ -1,6 +1,7 @@
 import streamlit as st
 import os
 import json
+import base64
 from google import genai
 from PIL import Image
 import datetime
@@ -15,6 +16,18 @@ import re
 os.environ["GEMINI_API_KEY"] = st.secrets["GEMINI_API_KEY"]
 client = genai.Client()
 
+
+def _hamburger_icon_css_url():
+    """PNG do ícone menu (anexo) embutido em data-URI para o CSS do Streamlit."""
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "hamburger_menu.png")
+    try:
+        with open(path, "rb") as f:
+            b64 = base64.b64encode(f.read()).decode("ascii")
+        return f"url('data:image/png;base64,{b64}')"
+    except OSError:
+        return "none"
+
+
 # --- 2. CONFIGURAÇÃO DA PÁGINA E ESTILO GAMIFICADO (UI/UX) ---
 st.set_page_config(
     page_title="Watty | O teu Tutor Inteligente",
@@ -24,6 +37,7 @@ st.set_page_config(
 )
 
 # 🎨 A MAGIA DO CSS (Cores Oficiais Watty baseadas no Design)
+_HAMBURGER_BG = _hamburger_icon_css_url()
 st.markdown("""
     <style>
     /* 1. O Fundo Principal (Lavanda/Lilás Watty) */
@@ -36,11 +50,49 @@ st.markdown("""
         background-color: transparent;
     }
 
-    /* Garante visibilidade e toque do botão hamburger */
-    [data-testid="collapsedControl"] {
+    /* Menu hamburger: sempre visível (toolbar / header / sidebar) */
+    [data-testid="collapsedControl"],
+    [data-testid="stSidebarCollapseButton"],
+    [data-testid="stToolbar"] [data-testid="collapsedControl"],
+    [data-testid="stToolbar"] [data-testid="stSidebarCollapseButton"] {
         display: flex !important;
         visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
         z-index: 1001;
+    }
+
+    [data-testid="collapsedControl"] button,
+    button[data-testid="stSidebarCollapseButton"] {
+        opacity: 1 !important;
+        visibility: visible !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    /* Remove o botão Fullscreen da barra de ferramentas (ex.: imagem no sidebar) */
+    section[data-testid="stSidebar"] button[aria-label="Fullscreen"] {
+        display: none !important;
+    }
+
+    /* Substitui o ícone Material (setas) do fecho/abertura da sidebar pelo ícone menu (PNG anexo) */
+    [data-testid="stSidebarCollapseButton"] span[data-testid="stIconMaterial"],
+    [data-testid="collapsedControl"] span[data-testid="stIconMaterial"],
+    header[data-testid="stHeader"] button span[data-testid="stIconMaterial"],
+    header.stAppHeader button span[data-testid="stIconMaterial"] {
+        font-size: 0 !important;
+        line-height: 0 !important;
+        color: transparent !important;
+        width: 2rem !important;
+        height: 2rem !important;
+        min-width: 2rem !important;
+        display: inline-block !important;
+        overflow: hidden !important;
+        background-image: __HAMBURGER_BG__;
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
     }
 
     /* 🚨 A CORREÇÃO DOS TELEMÓVEIS (Forçar texto a escuro) 🚨 */
@@ -129,6 +181,8 @@ st.markdown("""
     }
 
     /* 7. Utilitários estilo Tailwind (mobile-first) */
+    /* size-8 = 2rem — usado no ícone do menu */
+    .tw-size-8 { width: 2rem !important; height: 2rem !important; min-width: 2rem !important; }
     .tw-w-full { width: 100% !important; }
     .tw-h-auto { height: auto !important; }
     .tw-object-contain { object-fit: contain; }
@@ -206,8 +260,39 @@ st.markdown("""
             min-width: 100% !important;
         }
     }
+
+    /* Skeleton loading (bolha do assistente no chat) */
+    @keyframes watty-shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+    .watty-chat-skeleton {
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+        padding: 0.25rem 0;
+        width: 100%;
+        max-width: 100%;
+    }
+    .watty-chat-skeleton .watty-sk-line {
+        height: 0.85rem;
+        border-radius: 6px;
+        background: linear-gradient(
+            90deg,
+            #e8e0f2 0%,
+            #f5f1fb 35%,
+            #dcd4e8 65%,
+            #e8e0f2 100%
+        );
+        background-size: 200% 100%;
+        animation: watty-shimmer 1.35s ease-in-out infinite;
+    }
+    .watty-chat-skeleton .watty-sk-w100 { width: 100%; }
+    .watty-chat-skeleton .watty-sk-w95 { width: 95%; }
+    .watty-chat-skeleton .watty-sk-w85 { width: 85%; }
+    .watty-chat-skeleton .watty-sk-w60 { width: 60%; }
     </style>
-""", unsafe_allow_html=True)
+""".replace("__HAMBURGER_BG__", _HAMBURGER_BG), unsafe_allow_html=True)
 # --- 3. A PORTA DE ENTRADA, GAMIFICAÇÃO E STREAKS ---
 if "logado" not in st.session_state:
     st.session_state.logado = False
@@ -359,6 +444,15 @@ def exibir_com_graficos(texto_ia):
             except Exception as e:
                 st.error("⚠️ [Erro ao processar o gráfico gerado pela IA]")
 
+_CHAT_SKELETON_HTML = """
+<div class="watty-chat-skeleton" aria-busy="true" aria-live="polite">
+    <div class="watty-sk-line watty-sk-w100"></div>
+    <div class="watty-sk-line watty-sk-w85"></div>
+    <div class="watty-sk-line watty-sk-w95"></div>
+    <div class="watty-sk-line watty-sk-w60"></div>
+</div>
+"""
+
 # A Regra de Ouro anti-alucinações para injetar nos prompts
 REGRA_GRAFICOS = """
 ⚠️ REGRA PARA GRÁFICOS: NUNCA inventes ou uses links de imagens externas (como imgur). 
@@ -448,6 +542,9 @@ if aba_escolhida == "💬 Chat Socrático":
         st.session_state[chave_memoria].append({"role": "user", "content": mensagem_aluno})
 
         with st.chat_message("assistant"):
+            placeholder_resposta = st.empty()
+            placeholder_resposta.markdown(_CHAT_SKELETON_HTML, unsafe_allow_html=True)
+
             prompt_secreto = f"""
 És o Watty, um tutor especialista em {disciplina_escolhida} para o {ano_escolhido} em Portugal.
 
@@ -473,12 +570,14 @@ if aba_escolhida == "💬 Chat Socrático":
 
             try:
                 resposta_ia = client.models.generate_content(model='gemini-2.5-flash', contents=conteudo_para_ia)
+                placeholder_resposta.empty()
                 exibir_com_graficos(resposta_ia.text)
                 st.session_state[chave_memoria].append({"role": "assistant", "content": resposta_ia.text})
-                
+
                 guardar_no_excel("Chat", mensagem_aluno, resposta_ia.text)
-                
+
             except Exception as e:
+                placeholder_resposta.empty()
                 st.error(f"Erro na IA: {e}")
 
 # 🏋️ ABA QUIZZES (COM BOSS BATTLE)
