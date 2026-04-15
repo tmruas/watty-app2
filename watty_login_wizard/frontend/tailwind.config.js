@@ -3,6 +3,10 @@ export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
+      screens: {
+        /** Telemóveis estreitos (acima do default `sm`) */
+        xs: "380px",
+      },
       colors: {
         watty: {
           bg: "#E6DDF5",
@@ -16,6 +20,15 @@ export default {
       },
       boxShadow: {
         watty: "0px 6px 0px #7B1FA2",
+        card: "0 4px 24px rgba(74, 20, 140, 0.08)",
+      },
+      maxWidth: {
+        readable: "22rem",
+      },
+      minHeight: {
+        /** Hero: chão mínimo + limite com svh (mobile / iframe) */
+        "screen-safe":
+          "max(18rem, min(32rem, 85svh))",
       },
     },
   },

@@ -2,13 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
-html,
-body,
-#root {
-  min-height: 100%;
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
+  max-width: 100%;
+  overflow-x: clip;
   background-color: #e6ddf5;
+  /* Crítico: altura = conteúdo. min-height: 100vh/100dvh faz document.body.scrollHeight
+     ≈ altura do ecrã e o Streamlit corta ou deixa banda vazia no iframe. */
+  min-height: 0;
+  height: auto;
+}
+
+#root {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-height: 0;
+  height: auto;
 }

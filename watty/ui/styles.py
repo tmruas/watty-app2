@@ -166,11 +166,19 @@ def inject_global_styles() -> None:
         object-fit: contain;
     }
 
-    iframe, video {
+    /* Vídeos embutidos: proporção 16:9. NÃO aplicar o mesmo a iframe genérico:
+       os custom components (login wizard) usam iframe com altura definida por JS;
+       height/aspect-ratio com !important quebrava o setFrameHeight e cortava em mobile. */
+    video {
         width: 100% !important;
         max-width: 100% !important;
         height: auto !important;
         aspect-ratio: 16 / 9;
+    }
+
+    iframe {
+        width: 100% !important;
+        max-width: 100% !important;
     }
 
     @media (max-width: 768px) {
