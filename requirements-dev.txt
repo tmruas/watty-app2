@@ -1,0 +1,4 @@
+# Dependências opcionais para desenvolvimento e testes E2E de markup.
+# Instalação de browsers: playwright install chromium
+-r requirements.txt
+playwright>=1.49.0

@@ -302,7 +302,7 @@ def render_quiz_tab(
         else:
             components.html(
                 """
-                <div style="font-size: 30px; font-weight: bold; color: #FF4B4B; text-align: center; font-family: sans-serif; padding: 10px; border: 2px solid #FF4B4B; border-radius: 10px; background-color: #ffeaea;">
+                <div style="font-size: 1.875rem; font-weight: bold; color: #FF4B4B; text-align: center; font-family: sans-serif; padding: 0.625rem; border: 0.125rem solid #FF4B4B; border-radius: 0.625rem; background-color: #ffeaea;">
                     ⏱️ Tempo Restante: <span id="timer">100:00</span>
                 </div>
                 <script>

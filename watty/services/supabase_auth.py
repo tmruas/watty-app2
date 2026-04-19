@@ -12,8 +12,8 @@ def create_service_client(supabase_url: str, service_role_key: str) -> Client:
 
 def get_user_email_and_metadata(
     access_token: str, *, supabase_url: str, service_role_key: str
-) -> tuple[str, dict]:
-    """Verifica o JWT de acesso e devolve (email_normalizado, user_metadata)."""
+) -> tuple[str, dict, str | None]:
+    """Verifica o JWT de acesso e devolve (email, user_metadata, created_at ISO ou None)."""
     client = create_service_client(supabase_url, service_role_key)
     try:
         res = client.auth.get_user(access_token)
@@ -25,4 +25,8 @@ def get_user_email_and_metadata(
     if not email:
         raise ValueError("A conta não tem email associado.")
     meta = dict(res.user.user_metadata or {})
-    return email, meta
+    raw_created = getattr(res.user, "created_at", None)
+    created_at = str(raw_created).strip() if raw_created is not None else None
+    if created_at == "":
+        created_at = None
+    return email, meta, created_at

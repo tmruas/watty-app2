@@ -4,8 +4,9 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        /** Substituto oficial Duolingo quando não há Feather / DIN (Nunito). */
+        /** Fredoka ~ Feather Bold (Duolingo); Nunito como fallback. */
         sans: [
+          "Fredoka",
           "Nunito",
           "ui-sans-serif",
           "system-ui",
@@ -45,6 +46,15 @@ export default {
       },
       maxWidth: {
         readable: "22rem",
+      },
+      /**
+       * Espaçamentos de referência (escala Tailwind rem) alinhados com ajustes
+       * manuais da sidebar Streamlit em watty/ui/styles.py (padding/margin 0).
+       */
+      spacing: {
+        "watty-streamlit-sidebar-pull-sm": "1.25rem",
+        "watty-streamlit-sidebar-pull": "1.5rem",
+        "watty-streamlit-sidebar-pull-lg": "1.75rem",
       },
       minHeight: {
         /** Hero: chão mínimo + limite com svh (mobile / iframe) */

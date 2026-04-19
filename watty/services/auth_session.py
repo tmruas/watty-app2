@@ -7,16 +7,23 @@ import streamlit as st
 from extra_streamlit_components import CookieManager
 from supabase import create_client
 
+from watty.services.auth_cookie_read import refresh_and_read_auth_tokens
 from watty.services.sheets import carregar_perfil
 from watty.services.supabase_auth import get_user_email_and_metadata
 
 # Chave do widget Streamlit (única por sessão — ver get_cookie_manager).
 COOKIE_MANAGER_COMPONENT_KEY = "watty_auth_cookie_manager"
 _SESSION_STATE_COOKIE_MANAGER = "_watty_cookie_manager_singleton"
+# O CookieManager só recebe os cookies do browser após o iframe montar;
+# na 1.ª execução após refresh `get()` vem vazio — um rerun evita logout falso.
+_COOKIE_JS_SYNCED = "_watty_cookie_js_synced"
 COOKIE_ACCESS = "watty_supabase_at"
 COOKIE_REFRESH = "watty_supabase_rt"
 # Cookie de refresh no Supabase: ordem de grandeza de dias; margem confortável.
 COOKIE_MAX_AGE_DAYS = 14
+# Após logout explícito: não voltar a reconstruir sessão a partir de cookies nesta sessão Streamlit
+# (evita re-login imediato se o iframe ainda não reflectiu o delete).
+_SKIP_RESTORE_UNTIL_LOGIN = "_watty_skip_restore_until_login"
 
 
 def _max_age_seconds() -> float:
@@ -64,9 +71,12 @@ def clear_auth_cookies() -> None:
 
 def _read_tokens_from_cookies() -> tuple[str, str]:
     cm = get_cookie_manager()
-    at = (cm.get(COOKIE_ACCESS) or "").strip()
-    rt = (cm.get(COOKIE_REFRESH) or "").strip()
-    return at, rt
+    return refresh_and_read_auth_tokens(
+        cm,
+        access_key=COOKIE_ACCESS,
+        refresh_key=COOKIE_REFRESH,
+        pull_widget_key="watty_auth_pull_browser_cookies",
+    )
 
 
 def try_restore_session_from_cookies() -> bool:
@@ -76,12 +86,19 @@ def try_restore_session_from_cookies() -> bool:
     """
     if st.session_state.get("logado"):
         return True
+    if st.session_state.get(_SKIP_RESTORE_UNTIL_LOGIN):
+        return False
     try:
         supabase_url = str(st.secrets["SUPABASE_URL"]).strip()
         supabase_anon = str(st.secrets["SUPABASE_ANON_KEY"]).strip()
         service_role = str(st.secrets["SUPABASE_SERVICE_ROLE_KEY"]).strip()
     except Exception:
         return False
+
+    get_cookie_manager()
+    if not st.session_state.get(_COOKIE_JS_SYNCED):
+        st.session_state[_COOKIE_JS_SYNCED] = True
+        st.rerun()
 
     access_token, refresh_token = _read_tokens_from_cookies()
     if not access_token or not refresh_token:
@@ -105,7 +122,7 @@ def try_restore_session_from_cookies() -> bool:
         return False
 
     try:
-        email, meta = get_user_email_and_metadata(
+        email, meta, created_at = get_user_email_and_metadata(
             new_at,
             supabase_url=supabase_url,
             service_role_key=service_role,
@@ -132,17 +149,56 @@ def try_restore_session_from_cookies() -> bool:
     st.session_state.nivel = nivel_bd
     st.session_state.streak = streak_bd
     st.session_state.linha_bd = linha_bd
+    st.session_state["user_created_at"] = created_at
 
     if new_rt:
         save_auth_tokens_to_cookies(new_at, new_rt)
+    st.session_state.pop(_SKIP_RESTORE_UNTIL_LOGIN, None)
     return True
 
 
 def logout_clear_session() -> None:
-    """Termina sessão local e apaga cookies de auth."""
+    """Termina sessão local, revoga sessão Supabase quando possível e apaga cookies de auth."""
+    try:
+        supabase_url = str(st.secrets["SUPABASE_URL"]).strip()
+        supabase_anon = str(st.secrets["SUPABASE_ANON_KEY"]).strip()
+    except Exception:
+        supabase_url = ""
+        supabase_anon = ""
+
+    if supabase_url and supabase_anon:
+        try:
+            access_token, refresh_token = _read_tokens_from_cookies()
+            if access_token:
+                client = create_client(supabase_url, supabase_anon)
+                try:
+                    if refresh_token:
+                        client.auth.set_session(access_token, refresh_token)
+                    client.auth.sign_out()
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
     clear_auth_cookies()
+    st.session_state.pop(_COOKIE_JS_SYNCED, None)
     st.session_state.pop(_SESSION_STATE_COOKIE_MANAGER, None)
-    for k in ("nome_aluno", "nome_display", "xp", "nivel", "streak", "linha_bd"):
+    for k in (
+        "nome_aluno",
+        "nome_display",
+        "xp",
+        "nivel",
+        "streak",
+        "linha_bd",
+        "user_created_at",
+    ):
         st.session_state.pop(k, None)
     st.session_state.logado = False
     st.session_state.ui_route = "main"
+    st.session_state[_SKIP_RESTORE_UNTIL_LOGIN] = True
+    st.rerun()
+
+
+def clear_skip_restore_after_login() -> None:
+    """Chamar após login bem-sucedido para voltar a permitir restaurar sessão a partir de cookies."""
+    st.session_state.pop(_SKIP_RESTORE_UNTIL_LOGIN, None)

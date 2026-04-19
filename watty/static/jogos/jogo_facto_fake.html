@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WATTY - Facto ou Fake? (Mega Base de Dados)</title>
+    <style>
+        :root {
+            --bg: #F3EEFF;
+            --purple-main: #9B5DE5;
+            --purple-dark: #6D3AB5;
+            --lilac: #BE95F2;
+            --magenta: #F15BB5;
+            --white: #FFFFFF;
+            --text: #2D1B4D;
+            --success: #00BB7E;
+            --error: #FF4D4D;
+            --fake-color: #FF5A5F;
+            --fact-color: #00CC96;
+        }
+
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: manipulation; }
+
+        body {
+            background-color: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 10px;
+            color: var(--text);
+            overflow: hidden;
+        }
+
+        .app-container {
+            background: var(--white);
+            width: 100%;
+            max-width: 450px;
+            height: 90vh;
+            max-height: 850px;
+            border-radius: 30px;
+            padding: 20px;
+            box-shadow: 0 20px 40px rgba(155, 93, 229, 0.15);
+            border: 4px solid var(--purple-main);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Tabs de Navegação */
+        .tabs-container {
+            display: flex;
+            justify-content: space-between;
+            background: var(--bg);
+            border-radius: 15px;
+            padding: 5px;
+            margin-bottom: 15px;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 8px 5px;
+            border: none;
+            background: transparent;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: bold;
+            color: var(--purple-dark);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active { background: var(--purple-main); color: white; box-shadow: 0 4px 10px rgba(155, 93, 229, 0.3); }
+
+        /* Top Bar */
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .xp-container { flex-grow: 1; margin: 0 15px 0 0; height: 12px; background: #E0D7F0; border-radius: 6px; overflow: hidden; }
+        .xp-bar { height: 100%; background: linear-gradient(90deg, var(--magenta), var(--purple-main)); width: 0%; transition: width 0.5s ease; }
+
+        /* Watty Box */
+        .watty-box { display: flex; align-items: center; gap: 15px; background: var(--bg); padding: 12px; border-radius: 20px; margin-bottom: 15px; border: 2px dashed var(--lilac); transition: all 0.3s ease; }
+        .watty-box.error-state { border-color: var(--error); background: #FFF0F0; }
+        .watty-box.success-state { border-color: var(--success); background: #F0FFF8; }
+        .watty-avatar { width: 45px; height: 45px; background: var(--purple-main); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 22px; box-shadow: 0 5px 15px rgba(155, 93, 229, 0.3); flex-shrink: 0; }
+        .watty-speech { font-size: 12px; font-weight: 500; line-height: 1.3; }
+
+        .prompt-title { text-align: center; font-size: 16px; color: var(--purple-dark); margin-bottom: 5px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+        .card-counter { text-align: center; font-size: 12px; color: #888; font-weight: bold; margin-bottom: 10px; }
+
+        /* Área do Cartão */
+        .card-area { flex-grow: 1; position: relative; display: flex; justify-content: center; align-items: center; perspective: 1000px; z-index: 10; margin-bottom: 10px;}
+
+        .swipe-card {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            max-height: 280px;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 25px;
+            text-align: center;
+            border: 2px solid #EEE;
+            cursor: grab;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+            user-select: none;
+        }
+
+        .swipe-card:active { cursor: grabbing; }
+        
+        .card-theme { font-size: 11px; color: var(--magenta); text-transform: uppercase; font-weight: 900; letter-spacing: 1px; margin-bottom: 15px; border-bottom: 1px solid #EEE; padding-bottom: 5px; width: 100%; }
+        .card-text { font-size: 18px; font-weight: bold; color: var(--text); }
+
+        /* Animações */
+        .swipe-left { transform: translateX(-150%) rotate(-20deg); opacity: 0; }
+        .swipe-right { transform: translateX(150%) rotate(20deg); opacity: 0; }
+        .pop-in { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+        @keyframes popIn { 0% { transform: scale(0.8) translateY(50px); opacity: 0; } 100% { transform: scale(1) translateY(0); opacity: 1; } }
+        .shake { animation: shake 0.4s; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 50% { transform: translateX(10px); } 75% { transform: translateX(-10px); } }
+
+        /* Controlos (Textos removidos) */
+        .controls { display: flex; justify-content: space-around; padding-bottom: 15px; margin-top: 10px; }
+        .btn-action { width: 75px; height: 75px; border-radius: 50%; border: none; display: flex; justify-content: center; align-items: center; font-size: 32px; cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,0.15); transition: transform 0.2s, box-shadow 0.2s; }
+        .btn-action:active { transform: scale(0.9); }
+        .btn-fake { background: var(--fake-color); color: white; }
+        .btn-fact { background: var(--fact-color); color: white; }
+
+        /* Modal */
+        .modal-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(45, 27, 77, 0.96); border-radius: 26px; z-index: 100; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: white; padding: 30px; }
+    </style>
+</head>
+<body>
+
+<div class="app-container" id="gameWindow">
+    
+    <div class="tabs-container">
+        <button class="tab-btn active" id="tab-10" onclick="setGameMode(10)">10º Ano</button>
+        <button class="tab-btn" id="tab-11" onclick="setGameMode(11)">11º Ano</button>
+        <button class="tab-btn" id="tab-12" onclick="setGameMode(12)">12º Ano</button>
+        <button class="tab-btn" id="tab-global" onclick="setGameMode('global')">GLOBAL</button>
+    </div>
+
+    <div class="top-bar">
+        <div class="xp-container"><div class="xp-bar" id="ui-xp-bar"></div></div>
+        <div style="font-weight: bold; font-size: 12px; color: var(--purple-main);"><span id="ui-xp">0</span> XP</div>
+    </div>
+
+    <div class="watty-box" id="watty-container">
+        <div class="watty-avatar">🤓</div>
+        <div class="watty-speech" id="watty-text">Pronto para os 300 cartões? Escolhe um ano e desliza!</div>
+    </div>
+
+    <div class="prompt-title">Avalia a Afirmação:</div>
+    <div class="card-counter" id="card-counter">A carregar...</div>
+
+    <div class="card-area" id="card-area">
+        <div class="swipe-card" id="current-card">
+            <div class="card-theme" id="card-theme">-</div>
+            <div class="card-text" id="card-text">A preparar cartas...</div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="btn-action btn-fake" onclick="triggerSwipe(false)">✖</button>
+        <button class="btn-action btn-fact" onclick="triggerSwipe(true)">✔</button>
+    </div>
+
+    <div class="modal-overlay" id="modal-success">
+        <div style="font-size: 60px; margin-bottom: 10px;">🎓</div>
+        <h2 id="modal-title">SESSÃO CONCLUÍDA!</h2>
+        <p id="final-score">Revisão finalizada!</p>
+        <button class="btn-action btn-fact" style="width: 100%; border-radius: 20px; font-size: 16px; margin-top: 20px; height: 50px;" onclick="restartCurrentMode()">BARALHAR E REPETIR</button>
+    </div>
+</div>
+
+<script>
+    // -------------------------------------------------------------------------
+    // A TUA MEGA BASE DE DADOS (Aqui vais colar os blocos gerados)
+    // -------------------------------------------------------------------------
+    const rawDeck = [
+        // --- 10º ANO ---
+        { ano: 10, tema: "Grécia Antiga", text: "A democracia ateniense permitia o voto a mulheres e metecos (estrangeiros).", isFact: false, feedback: "<strong>Fake!</strong> A democracia ateniense era exclusiva para cidadãos (homens, livres, atenienses)." },
+        { ano: 10, tema: "Império Romano", text: "A economia romana era fortemente urbana, comercial e monetarizada.", isFact: true, feedback: "<strong>Facto!</strong> As cidades eram o centro económico e a moeda circulava por todo o império." },
+        { ano: 10, tema: "Idade Média", text: "O feudalismo caracterizava-se por uma forte centralização do poder no Rei.", isFact: false, feedback: "<strong>Fake!</strong> O feudalismo baseava-se na descentralização; os senhores feudais tinham o poder local." },
+        { ano: 10, tema: "Civilização Romana", text: "O Direito Romano foi uma das maiores heranças civilizacionais de Roma para o ocidente.", isFact: true, feedback: "<strong>Facto!</strong> O Direito Romano é a base de muitos sistemas jurídicos modernos europeus." },
+        { ano: 10, tema: "Senhorio", text: "Os servos da gleba podiam abandonar as terras do senhor quando quisessem.", isFact: false, feedback: "<strong>Fake!</strong> Os servos estavam vinculados à terra e não a podiam abandonar sem a permissão do senhor." },
+
+        // --- 11º ANO ---
+        { ano: 11, tema: "Expansão Marítima", text: "O Tratado de Tordesilhas (1494) dividiu o mundo descoberto entre Portugal e Espanha.", isFact: true, feedback: "<strong>Facto!</strong> Foi assinado para resolver conflitos de navegação após a viagem de Colombo." },
+        { ano: 11, tema: "Absolutismo", text: "O Marquês de Pombal defendeu o poder absoluto da Igreja Católica no Estado.", isFact: false, feedback: "<strong>Fake!</strong> Pombal expulsou os Jesuítas e defendeu a submissão da Igreja ao Estado." },
+        { ano: 11, tema: "Revolução Liberal", text: "A Constituição de 1822 instaurou uma Monarquia Constitucional em Portugal.", isFact: true, feedback: "<strong>Facto!</strong> Estabeleceu a separação de poderes e limitou o poder do Rei." },
+        { ano: 11, tema: "Renascimento", text: "O Humanismo renascentista defendia a visão teocêntrica medieval do mundo.", isFact: false, feedback: "<strong>Fake!</strong> O Humanismo era antropocêntrico, colocando o Homem no centro das preocupações." },
+        { ano: 11, tema: "Revolução Industrial", text: "A introdução da máquina a vapor foi decisiva para o arranque da 1ª Revolução Industrial.", isFact: true, feedback: "<strong>Facto!</strong> Permitiu mecanizar a produção têxtil e revolucionar os transportes (comboio)." },
+
+        // --- 12º ANO ---
+        { ano: 12, tema: "1ª Guerra Mundial", text: "Portugal participou militarmente na Guerra lutando na Flandres e em África.", isFact: true, feedback: "<strong>Facto!</strong> O Corpo Expedicionário lutou em França, defendendo também Angola e Moçambique." },
+        { ano: 12, tema: "Estado Novo", text: "A PIDE era a polícia política do regime encarregue da censura e repressão.", isFact: true, feedback: "<strong>Facto!</strong> Controlava a oposição política usando prisões como Caxias." },
+        { ano: 12, tema: "Guerra Fria", text: "A NATO foi criada como uma aliança militar do Bloco de Leste (Soviético).", isFact: false, feedback: "<strong>Fake!</strong> A NATO é do bloco Ocidental. A aliança de Leste era o Pacto de Varsóvia." },
+        { ano: 12, tema: "25 de Abril", text: "O programa do MFA baseava-se nos '3 D': Democratizar, Descolonizar, Desenvolver.", isFact: true, feedback: "<strong>Facto!</strong> Foram os três pilares que guiaram a revolução e transição democrática." },
+        { ano: 12, tema: "Construção Europeia", text: "Portugal foi um dos países fundadores da Comunidade Económica Europeia (CEE) em 1957.", isFact: false, feedback: "<strong>Fake!</strong> Portugal só aderiu em 1986. Os fundadores foram França, RFA, Itália, Bélgica, Holanda e Luxemburgo." }
+        
+        // PASTE DOS LOTES DE 25/50 CARTÕES VEM AQUI
+    ];
+
+    let currentMode = 10; 
+    let playDeck = [];
+    let currentIndex = 0;
+    let xp = 0;
+    let correctAnswers = 0;
+    const pointsPerCard = 50;
+
+    const cardEl = document.getElementById('current-card');
+    const wattyContainer = document.getElementById('watty-container');
+    const wattyText = document.getElementById('watty-text');
+    const gameWindow = document.getElementById('gameWindow');
+    const modal = document.getElementById('modal-success');
+
+    function shuffleArray(array) {
+        let shuffled = array.slice();
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    }
+
+    function setGameMode(mode) {
+        currentMode = mode;
+        
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`tab-${mode}`).classList.add('active');
+
+        if (mode === 'global') {
+            playDeck = shuffleArray([...rawDeck]);
+            wattyText.innerText = `Modo Global! ${playDeck.length} cartões misturados. O derradeiro teste!`;
+        } else {
+            playDeck = shuffleArray(rawDeck.filter(card => card.ano === mode));
+            wattyText.innerText = `Matéria do ${mode}º Ano! Temos ${playDeck.length} cartões prontos.`;
+        }
+
+        currentIndex = 0; xp = 0; correctAnswers = 0;
+        document.getElementById('ui-xp').innerText = "0";
+        document.getElementById('ui-xp-bar').style.width = "0%";
+        wattyContainer.className = 'watty-box'; 
+        modal.style.display = 'none';
+
+        cardEl.style.opacity = '0';
+        setTimeout(loadCard, 200);
+    }
+
+    function restartCurrentMode() { setGameMode(currentMode); }
+
+    function loadCard() {
+        if (playDeck.length === 0) {
+            document.getElementById('card-text').innerText = "Sem cartões para este ano.";
+            cardEl.style.opacity = '1'; return;
+        }
+
+        if (currentIndex >= playDeck.length) {
+            document.getElementById('final-score').innerText = `Acertaste ${correctAnswers} de ${playDeck.length}!\nTotal: ${xp} XP.`;
+            modal.style.display = 'flex'; return;
+        }
+        
+        cardEl.className = 'swipe-card pop-in';
+        cardEl.style.transform = '';
+        cardEl.style.opacity = '1';
+        
+        let temaPrefix = currentMode === 'global' ? `${playDeck[currentIndex].ano}º Ano - ` : '';
+        document.getElementById('card-theme').innerText = temaPrefix + playDeck[currentIndex].tema;
+        document.getElementById('card-text').innerText = playDeck[currentIndex].text;
+        document.getElementById('card-counter').innerText = `Cartão ${currentIndex + 1} de ${playDeck.length}`;
+    }
+
+    function processAnswer(guessedFact) {
+        if(playDeck.length === 0 || currentIndex >= playDeck.length) return;
+
+        const currentData = playDeck[currentIndex];
+        const isCorrect = (guessedFact === currentData.isFact);
+        const maxXP = playDeck.length * pointsPerCard;
+
+        wattyContainer.className = 'watty-box'; 
+
+        if (isCorrect) {
+            correctAnswers++; xp += pointsPerCard;
+            document.getElementById('ui-xp').innerText = xp;
+            document.getElementById('ui-xp-bar').style.width = (xp / maxXP * 100) + "%";
+            wattyContainer.classList.add('success-state');
+            wattyText.innerHTML = "<strong>Certo!</strong> " + (currentData.isFact ? "Isto é um Facto histórico." : "Apanhaste o Fake!");
+        } else {
+            gameWindow.classList.remove('shake');
+            void gameWindow.offsetWidth; 
+            gameWindow.classList.add('shake');
+            if (navigator.vibrate) navigator.vibrate(200);
+            wattyContainer.classList.add('error-state');
+            wattyText.innerHTML = currentData.feedback; 
+        }
+
+        currentIndex++;
+        setTimeout(loadCard, 400); 
+    }
+
+    function triggerSwipe(guessedFact) {
+        if(currentIndex >= playDeck.length) return;
+        if (guessedFact) cardEl.classList.add('swipe-right');
+        else cardEl.classList.add('swipe-left');
+        processAnswer(guessedFact);
+    }
+
+    let startX = 0, currentX = 0, isDragging = false;
+    cardEl.addEventListener('mousedown', dragStart); cardEl.addEventListener('touchstart', dragStart, {passive: true});
+    document.addEventListener('mousemove', dragMove); document.addEventListener('touchmove', dragMove, {passive: true});
+    document.addEventListener('mouseup', dragEnd); document.addEventListener('touchend', dragEnd);
+
+    function dragStart(e) {
+        if (e.target !== cardEl && !cardEl.contains(e.target)) return;
+        isDragging = true;
+        startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+        cardEl.style.transition = 'none'; 
+    }
+
+    function dragMove(e) {
+        if (!isDragging) return;
+        currentX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+        const diffX = currentX - startX;
+        cardEl.style.transform = `translateX(${diffX}px) rotate(${diffX * 0.05}deg)`;
+    }
+
+    function dragEnd() {
+        if (!isDragging) return;
+        isDragging = false;
+        const diffX = currentX - startX;
+        cardEl.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out'; 
+
+        if (diffX > 100) triggerSwipe(true);
+        else if (diffX < -100) triggerSwipe(false);
+        else cardEl.style.transform = 'translateX(0) rotate(0deg)';
+        startX = 0; currentX = 0;
+    }
+
+    setGameMode(10);
+</script>
+
+</body>
+</html>

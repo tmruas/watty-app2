@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Módulo 2: O Lobo de Wall Street (Mecanismos de Mercado)</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f2027; color: white; text-align: center; margin: 0; padding: 20px; overflow-x: hidden; }
+        h1 { color: #f1c40f; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); margin-bottom: 5px; }
+        h3 { color: #ecf0f1; margin-top: 0; font-weight: normal; font-size: 16px;}
+        
+        #setup-screen { background: #2c3e50; padding: 40px; border-radius: 15px; display: inline-block; margin-top: 50px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); border-top: 5px solid #f1c40f;}
+        input { padding: 10px; font-size: 18px; width: 60px; text-align: center; border-radius: 5px; border: none; margin: 10px; }
+        
+        #game-screen { display: none; justify-content: center; gap: 30px; margin-top: 20px; }
+        #board-container { position: relative; width: 600px; height: 600px; background-color: #ecf0f1; border: 5px solid #f1c40f; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        #board { display: grid; grid-template-columns: repeat(10, 60px); grid-template-rows: repeat(10, 60px); width: 100%; height: 100%; }
+        
+        .cell { border: 1px solid #bdc3c7; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; color: #2c3e50; position: relative;}
+        .cell:nth-child(even) { background-color: #e0e6ed; }
+        .cell:nth-child(odd) { background-color: #f4f7f6; }
+        .cell.start { background-color: #3498db; color: white; }
+        .cell.finish { background-color: #f1c40f; color: #2c3e50; font-size: 24px;}
+        .cell.trap { color: #e74c3c; font-weight: 900; text-shadow: 1px 1px 2px rgba(0,0,0,0.2); }
+        
+        .player { width: 20px; height: 20px; border-radius: 50%; position: absolute; border: 3px solid white; box-shadow: 0 4px 8px rgba(0,0,0,0.7); transition: all 0.6s ease-in-out; z-index: 10; margin-top: -10px; margin-left: -10px; }
+        
+        #panel { background: #2c3e50; padding: 20px; border-radius: 10px; width: 320px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); border-top: 5px solid #3498db;}
+        button { background-color: #e67e22; color: white; border: none; padding: 15px 20px; font-size: 20px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; width: 100%; box-shadow: 0 4px 0 #d35400; }
+        button:hover { background-color: #d35400; transform: translateY(2px); box-shadow: 0 2px 0 #a04000; }
+        button:disabled { background-color: #7f8c8d; box-shadow: none; transform: none; cursor: not-allowed; }
+        
+        #dice-display { font-size: 60px; margin: 15px 0; background: white; color: #2c3e50; border-radius: 15px; width: 100px; height: 100px; line-height: 100px; display: inline-block; box-shadow: inset 0 0 10px rgba(0,0,0,0.2); }
+        
+        .score-board { margin-top: 15px; text-align: left; max-height: 350px; overflow-y: auto; padding-right: 5px; }
+        .score-board::-webkit-scrollbar { width: 8px; }
+        .score-board::-webkit-scrollbar-thumb { background: #f1c40f; border-radius: 4px; }
+        
+        .team-score { margin: 8px 0; font-size: 16px; padding: 10px; border-radius: 5px; background: rgba(255,255,255,0.1); transition: 0.3s; position: relative; }
+        .status-icons { float: right; font-size: 20px; }
+        
+        #modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; justify-content: center; align-items: center; }
+        #modal-box { background: #ecf0f1; color: #2c3e50; padding: 40px; border-radius: 15px; max-width: 600px; text-align: center; box-shadow: 0 0 50px rgba(241, 196, 15, 0.5); font-size: 20px; border-top: 10px solid #f1c40f; }
+        #modal-text { margin-bottom: 25px; line-height: 1.5; font-size: 18px; }
+        #modal-choices { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        .choice-btn { background-color: #34495e; color: white; font-size: 17px; box-shadow: 0 4px 0 #2c3e50; padding: 12px; border: none; border-radius: 5px; cursor: pointer; }
+        .choice-btn:hover { background-color: #2c3e50; transform: translateY(2px); box-shadow: 0 2px 0 #1a252f; }
+        #modal-btn { background-color: #27ae60; box-shadow: 0 4px 0 #2ecc71; display: none; color: white; border: none; cursor: pointer; padding: 15px;}
+    </style>
+</head>
+<body>
+
+    <div id="setup-screen">
+        <h1>📈 O Lobo do Mercado</h1>
+        <h3>Módulo 2: O Mecanismo de Mercado. Ganha quem tiver mais Lucro (💰).<br>O último a chegar ao fim abre Falência!</h3>
+        <h2>Quantas Empresas vão competir?</h2>
+        <input type="number" id="num-players" min="2" max="20" value="4"><br><br>
+        <button onclick="iniciarJogo()">Entrar na Bolsa e Começar!</button>
+    </div>
+
+    <div id="game-screen">
+        <div id="board-container">
+            <div id="board"></div>
+        </div>
+
+        <div id="panel">
+            <h2 id="turn-indicator">A preparar...</h2>
+            <div id="dice-display">🎲</div>
+            <button id="btn-roll" onclick="lancarDado()">Lançar Dado</button>
+            <div class="score-board" id="scores"></div>
+        </div>
+    </div>
+
+    <div id="modal-overlay">
+        <div id="modal-box">
+            <h1 id="modal-title">Forças de Mercado!</h1>
+            <div id="modal-text">Mensagem...</div>
+            <div id="modal-choices"></div>
+            <button id="modal-btn" onclick="fecharModalAposEscolha()">Avançar</button>
+        </div>
+    </div>
+
+    <script>
+        let players = [];
+        let currentTurn = 0;
+        let isMoving = false;
+        let gameEnded = false;
+        
+        const colors = [
+            "#e74c3c", "#3498db", "#2ecc71", "#9b59b6", "#f39c12", "#1abc9c", 
+            "#e67e22", "#34495e", "#16a085", "#27ae60", "#2980b9", "#8e44ad", 
+            "#f1c40f", "#d35400", "#c0392b", "#bdc3c7", "#7f8c8d", "#ff9ff3", 
+            "#feca57", "#ff6b6b", "#48dbfb", "#1dd1a1", "#0abde3", "#10ac84"
+        ];
+        
+        let especial = {};
+        const boardDiv = document.getElementById('board');
+        const boardContainer = document.getElementById('board-container');
+        let cellsCoords = {}; 
+
+        // 🎲 BANCO DE 25 EVENTOS MÓDULO 2 (MECANISMOS DE MERCADO, OFERTA, PROCURA)
+const eventosPossiveis = [
+            // --- OFERTA, PROCURA E EQUILÍBRIO ---
+            { titulo: "📉 Excesso de Oferta", texto: "O preço está acima do Equilíbrio. Tens os armazéns cheios e ninguém compra.", opcoes: [{ textoBotao: "Baixo o preço para o Equilíbrio.", resultados: [{ txt: "Limpaste o stock e recuperaste o dinheiro investido.", isGood: true }, { txt: "Baixaste tanto que os clientes desconfiaram da qualidade.", isGood: false }] }, { textoBotao: "Mantenho o preço e reduzo a produção.", resultados: [{ txt: "Controlaste a oferta e mantiveste a margem de luxo.", isGood: true }, { txt: "Os produtos perderam a validade no armazém. Prejuízo.", isGood: false }] }]},
+            { titulo: "🛒 Excesso de Procura", texto: "Filas à porta! O preço está abaixo do Equilíbrio e o stock esgotou.", opcoes: [{ textoBotao: "Subo o preço (Lei da Procura).", resultados: [{ txt: "Lucro máximo! Os clientes aceitaram pagar mais.", isGood: true }, { txt: "Subiste demasiado e a procura retraiu-se de repente.", isGood: false }] }, { textoBotao: "Mantenho o preço para fidelizar.", resultados: [{ txt: "Ganhaste clientes para a vida inteira.", isGood: true }, { txt: "A concorrência aproveitou as filas para vender mais caro.", isGood: false }] }]},
+            { titulo: "✨ Alteração de Gostos", texto: "Um influenciador usou o teu produto. A Procura deslocou-se para a Direita!", opcoes: [{ textoBotao: "Aumento a produção à pressa.", resultados: [{ txt: "Apanhaste a onda e vendeste milhões.", isGood: true }, { txt: "Investiste na fábrica mas a moda passou numa semana.", isGood: false }] }, { textoBotao: "Aumento o preço e crio exclusividade.", resultados: [{ txt: "Esgotaste o stock com uma margem de lucro brutal.", isGood: true }, { txt: "Os seguidores acharam caro e cancelaram a marca.", isGood: false }] }]},
+            { titulo: "💸 Queda de Rendimento", texto: "Crise nacional. O rendimento das Famílias desceu (Procura para a Esquerda).", opcoes: [{ textoBotao: "Lanço uma linha 'Low-Cost' (Bem Inferior).", resultados: [{ txt: "As vendas da linha barata salvaram o trimestre.", isGood: true }, { txt: "A linha barata destruiu o prestígio da tua marca.", isGood: false }] }, { textoBotao: "Mantenho tudo. É um 'Bem Essencial'.", resultados: [{ txt: "Tinhas razão. Sendo essencial, a procura é inelástica.", isGood: true }, { txt: "Afinal era um Bem Normal, as vendas caíram a pique.", isGood: false }] }]},
+            { titulo: "🏭 Aumento de Custos", texto: "A eletricidade duplicou! Oferta desloca-se para a Esquerda.", opcoes: [{ textoBotao: "Passo o custo para o preço final.", resultados: [{ txt: "O cliente compreendeu a inflação e aceitou.", isGood: true }, { txt: "Ficaste caro demais e as vendas pararam.", isGood: false }] }, { textoBotao: "Absorvo o custo e reduzo o lucro.", resultados: [{ txt: "Conquistaste os clientes da concorrência.", isGood: true }, { txt: "Ficaste sem liquidez para pagar ordenados.", isGood: false }] }]},
+            { titulo: "⚙️ Choque Tecnológico", texto: "Nova máquina reduz custos para metade (Oferta para a Direita).", opcoes: [{ textoBotao: "Compro as máquinas e baixo preços.", resultados: [{ txt: "Esmagaste a concorrência com preços baixos!", isGood: true }, { txt: "A máquina tinha defeitos e parou a fábrica.", isGood: false }] }, { textoBotao: "Compro e mantenho o preço (mais margem).", resultados: [{ txt: "Lucros históricos! Cofres cheios.", isGood: true }, { txt: "Concorrentes baixaram os preços e tu perdeste o mercado.", isGood: false }] }]},
+            { titulo: "🍫 Bens Substitutos", texto: "Vendes Rebuçados. O preço do Chocolate (Bem Substituto) disparou no mercado!", opcoes: [{ textoBotao: "Aumento a produção de Rebuçados.", resultados: [{ txt: "Leste bem o mercado! Todos vieram comprar rebuçados.", isGood: true }, { txt: "As pessoas preferiram fazer dieta a comer os teus rebuçados.", isGood: false }] }, { textoBotao: "Aumento o preço dos Rebuçados.", resultados: [{ txt: "Aproveitaste a boleia do chocolate e lucraste.", isGood: true }, { txt: "Ficaste tão caro como o chocolate e perdeste vendas.", isGood: false }] }]},
+            { titulo: "🖨️ Bens Complementares", texto: "Vendes Tinteiros. O preço das Impressoras baixou brutalmente.", opcoes: [{ textoBotao: "Aumento a produção de Tinteiros.", resultados: [{ txt: "Mais impressoras vendidas = Mais tinteiros comprados!", isGood: true }, { txt: "Fizeste tinteiros incompatíveis com os modelos novos.", isGood: false }] }, { textoBotao: "Subo o preço dos Tinteiros.", resultados: [{ txt: "Eles precisam de tinta! Pagaram o que pediste.", isGood: true }, { txt: "Surgiram marcas brancas que te roubaram o mercado.", isGood: false }] }]},
+            { titulo: "⛽ Bens Independentes", texto: "O preço do Petróleo subiu, mas tu vendes Software digital.", opcoes: [{ textoBotao: "Ignoro a subida. Os bens são independentes.", resultados: [{ txt: "Decisão correta. O teu modelo de negócio não sofreu.", isGood: true }, { txt: "Esqueceste-te que os teus servidores gastam muita energia.", isGood: false }] }, { textoBotao: "Subo o preço do Software por precaução.", resultados: [{ txt: "Aumentaste margens sem perder clientes fiéis.", isGood: true }, { txt: "Subida injustificada fez os clientes cancelarem subscrições.", isGood: false }] }]},
+            
+            // --- ESTRUTURAS DE MERCADO ---
+            { titulo: "👑 Monopólio", texto: "És o único produtor do mercado. Tens Poder de Mercado Total.", opcoes: [{ textoBotao: "Esmago os consumidores com preços altíssimos.", resultados: [{ txt: "O monopolista reina. Cofres a rebentar!", isGood: true }, { txt: "O Governo aplicou a Lei da Concorrência e desmembrou a tua empresa.", isGood: false }] }, { textoBotao: "Preços moderados para evitar regulação.", resultados: [{ txt: "Domínio estável e duradouro sem chatices legais.", isGood: true }, { txt: "Inovaste pouco e surgiu um concorrente a destruir o monopólio.", isGood: false }] }]},
+            { titulo: "🤝 Oligopólio (O Cartel)", texto: "São só 3 empresas gigantes. Um rival propõe combinarem preços.", opcoes: [{ textoBotao: "Aceito. Lucramos todos o máximo.", resultados: [{ txt: "O cartel funcionou perfeitamente. Controlo total.", isGood: true }, { txt: "A Autoridade da Concorrência apanhou-vos. Multa histórica.", isGood: false }] }, { textoBotao: "Denuncio o cartel e baixo os preços.", resultados: [{ txt: "Destruíste os rivais e ganhaste fama de justo.", isGood: true }, { txt: "Guerra de Preços! Destruíram-se mutuamente.", isGood: false }] }]},
+            { titulo: "👟 Concorrência Monopolística", texto: "Vendes calçado. Há muitos vendedores, mas tu queres Diferenciar o produto.", opcoes: [{ textoBotao: "Gasto fortunas em Branding e Publicidade.", resultados: [{ txt: "Criaste uma marca de 'culto'. Preços disparam!", isGood: true }, { txt: "O marketing falhou e ficaste com a dívida.", isGood: false }] }, { textoBotao: "Foco no Preço. Vendo as mais baratas.", resultados: [{ txt: "Volume massivo salvou as tuas contas.", isGood: true }, { txt: "Não consegues competir com o custo da produção asiática.", isGood: false }] }]},
+            { titulo: "🍎 Concorrência Perfeita", texto: "Produzes laranjas. És 'Price Taker', o mercado impõe o preço.", opcoes: [{ textoBotao: "Tento vender acima do preço de mercado.", resultados: [{ txt: "Mentiste dizendo que eram biológicas e colou.", isGood: true }, { txt: "A procura é perfeitamente elástica. Vendeste zero.", isGood: false }] }, { textoBotao: "Foco-me em produzir mais quantidade.", resultados: [{ txt: "Atingiste economias de escala e lucraste na quantidade.", isGood: true }, { txt: "Excesso de laranjas no mercado afundou o preço global.", isGood: false }] }]},
+            { titulo: "🧱 Barreiras à Entrada", texto: "Um mercado novo exige 10 milhões em licenças para entrar.", opcoes: [{ textoBotao: "Peço um empréstimo e salto a barreira.", resultados: [{ txt: "Entraste no Oligopólio! Lucros imensos garantidos.", isGood: true }, { txt: "Não conseguiste pagar os juros do empréstimo.", isGood: false }] }, { textoBotao: "Desisto e procuro um mercado sem barreiras.", resultados: [{ txt: "Poupaste recursos e encontraste um nicho bom.", isGood: true }, { txt: "Ficaste num mercado saturado onde ninguém lucra.", isGood: false }] }]},
+            
+            // --- ELASTICIDADE E PREÇOS ---
+            { titulo: "🎟️ Elasticidade-Preço", texto: "O teu produto tem muitos substitutos (Procura Elástica). Precisas de faturar mais.", opcoes: [{ textoBotao: "Baixo o preço para atrair multidões.", resultados: [{ txt: "Roubaste clientes a todos os concorrentes!", isGood: true }, { txt: "A descida de preço não compensou o aumento de volume.", isGood: false }] }, { textoBotao: "Aumento o preço ligeiramente.", resultados: [{ txt: "Apesar de elástico, a tua marca tem clientes fiéis.", isGood: true }, { txt: "Bastou subir 1€ para perderes 40% dos clientes.", isGood: false }] }]},
+            { titulo: "💊 Bens Inelásticos", texto: "Vendes um medicamento único. A procura é super inelástica.", opcoes: [{ textoBotao: "Aumento o preço 50%.", resultados: [{ txt: "A lei do mercado funcionou. Lucros obscenos.", isGood: true }, { txt: "O Estado interveio e impôs-te um preço máximo.", isGood: false }] }, { textoBotao: "Mantenho o preço ético.", resultados: [{ txt: "Ganhaste a confiança do mercado e do regulador.", isGood: true }, { txt: "Perdeste a oportunidade de faturar para reinvestir.", isGood: false }] }]},
+            { titulo: "💎 Bens de Veblen (Luxo)", texto: "O teu produto é de luxo. As vendas estão a estagnar.", opcoes: [{ textoBotao: "Aumento o preço para parecer mais exclusivo.", resultados: [{ txt: "Efeito Veblen! Os ricos compraram mais por ser mais caro.", isGood: true }, { txt: "Ficaste fora da realidade e a marca perdeu relevância.", isGood: false }] }, { textoBotao: "Faço promoções e descontos.", resultados: [{ txt: "Vendeste muito volume a novos clientes.", isGood: true }, { txt: "A marca perdeu o estatuto VIP e os ricos fugiram.", isGood: false }] }]},
+            { titulo: "🥔 Bens de Giffen", texto: "Vendes um bem inferior essencial. O preço dos bens normais subiu muito.", opcoes: [{ textoBotao: "Subo o preço do meu bem, o povo tem de comer.", resultados: [{ txt: "Mesmo mais caras, as vendas subiram!", isGood: true }, { txt: "O povo uniu-se e boicotou os teus produtos.", isGood: false }] }, { textoBotao: "Mantenho o preço baixo para ajudar o povo.", resultados: [{ txt: "Garantiste o monopólio alimentar da região.", isGood: true }, { txt: "A inflação destruiu a tua margem de lucro.", isGood: false }] }]},
+            { titulo: "✈️ Discriminação de Preços", texto: "Vendes bilhetes de avião. Estudantes e Executivos viajam contigo.", opcoes: [{ textoBotao: "Crio tarifas de estudante mais baratas.", resultados: [{ txt: "Encheste os lugares vazios e lucraste mais.", isGood: true }, { txt: "Os executivos descobriram como comprar tarifa jovem.", isGood: false }] }, { textoBotao: "Preço único e alto para todos.", resultados: [{ txt: "Os executivos pagaram sem pestanejar.", isGood: true }, { txt: "Aviões a voar meio vazios. Prejuízo.", isGood: false }] }]},
+            
+            // --- ESTADO, IMPOSTOS E FALHAS DE MERCADO ---
+            { titulo: "⚖️ Preço Máximo", texto: "O Governo fixou um preço máximo abaixo do Equilíbrio.", opcoes: [{ textoBotao: "Reduzo a qualidade para compensar o preço.", resultados: [{ txt: "Mantiveste as margens financeiras.", isGood: true }, { txt: "Os clientes notaram e a tua reputação afundou.", isGood: false }] }, { textoBotao: "Crio um 'mercado negro' paralelo.", resultados: [{ txt: "Faturaste muito fora do sistema legal.", isGood: true }, { txt: "Apanhado pela ASAE! Multa gigante.", isGood: false }] }]},
+            { titulo: "🛑 Impostos Pigouvianos", texto: "O Estado criou um imposto sobre o açúcar. Tu produzes refrigerantes.", opcoes: [{ textoBotao: "Mudo a fórmula para usar adoçantes.", resultados: [{ txt: "Poupaste milhões e o marketing 'Zero' resultou.", isGood: true }, { txt: "Os clientes odiaram o sabor novo.", isGood: false }] }, { textoBotao: "Mantenho o açúcar e subo o preço.", resultados: [{ txt: "O vício do açúcar é inelástico. Pagaram mais.", isGood: true }, { txt: "O imposto foi tão alto que o produto deixou de vender.", isGood: false }] }]},
+            { titulo: "🐟 A Tragédia dos Comuns", texto: "Pescapes em águas internacionais (recurso comum, não rival, não exclusivo).", opcoes: [{ textoBotao: "Pesco o máximo possível antes dos rivais.", resultados: [{ txt: "Faturaste milhões e esmagaste a concorrência.", isGood: true }, { txt: "O peixe extinguiu-se. Ficaste sem negócio.", isGood: false }] }, { textoBotao: "Pesco com quotas sustentáveis.", resultados: [{ txt: "Garantiste o futuro da tua empresa.", isGood: true }, { txt: "Os teus rivais pescaram tudo e deixaram-te na miséria.", isGood: false }] }]},
+            { titulo: "🌳 Bens Públicos (Free Rider)", texto: "Queres iluminar a tua rua comercial, mas os rivais não querem pagar a parte deles.", opcoes: [{ textoBotao: "Pago eu a luz toda.", resultados: [{ txt: "A rua atraiu multidões. Tu foste o rei das vendas.", isGood: true }, { txt: "Efeito 'Free Rider': os rivais lucraram à tua custa.", isGood: false }] }, { textoBotao: "Não pago a luz.", resultados: [{ txt: "Poupaste dinheiro e focaste-te no online.", isGood: true }, { txt: "A rua ficou às escuras e os clientes desapareceram.", isGood: false }] }]},
+            { titulo: "🚗 Assimetria de Informação", texto: "Vendes carros usados. Os clientes temem comprar 'sucata' (Lemons).", opcoes: [{ textoBotao: "Ofereço Garantia Total de 2 anos (Sinalização).", resultados: [{ txt: "A garantia provou a tua qualidade. Vendas dispararam!", isGood: true }, { txt: "Os carros avariaram muito e as garantias faliram-te.", isGood: false }] }, { textoBotao: "Baixo o preço para competir com todos.", resultados: [{ txt: "Vendes muito volume para as massas.", isGood: true }, { txt: "Ficaste com a reputação de vender carros estragados.", isGood: false }] }]},
+            { titulo: "🔥 Risco Moral (Moral Hazard)", texto: "Fizeste um seguro total contra roubos na loja. Sem franquia.", opcoes: [{ textoBotao: "Reduzo despesas de segurança. O seguro paga.", resultados: [{ txt: "Poupaste em seguranças e lucraste mais.", isGood: true }, { txt: "Foste roubado, o seguro descobriu a negligência e não pagou.", isGood: false }] }, { textoBotao: "Mantenho a vigilância forte.", resultados: [{ txt: "Nunca foste assaltado e o seguro baixou-te a mensalidade.", isGood: true }, { txt: "Gastaste dinheiro numa segurança que não foi precisa.", isGood: false }] }]},
+            { titulo: "🏭 Poluição (Externalidade Negativa)", texto: "A tua fábrica polui o rio. Produzir limpo custa mais 20%.", opcoes: [{ textoBotao: "Ignoro a poluição e lucro ao máximo.", resultados: [{ txt: "Os lucros obscenos compensaram o risco.", isGood: true }, { txt: "O Estado obrigou-te a limpar o rio. Falência.", isGood: false }] }, { textoBotao: "Instalo filtros antipoluição.", resultados: [{ txt: "Marketing Verde! Vendeste muito mais.", isGood: true }, { txt: "Os custos subiram e tiveste de despedir pessoas.", isGood: false }] }]},
+            { titulo: "💡 I&D (Externalidade Positiva)", texto: "Se formares a equipa, rivais podem roubar os talentos (Spillovers).", opcoes: [{ textoBotao: "Invisto na formação da minha equipa.", resultados: [{ txt: "A equipa inovou e lançou um produto genial.", isGood: true }, { txt: "Eles aprenderam tudo e foram para a concorrência.", isGood: false }] }, { textoBotao: "Não dou formação, eles que aprendam.", resultados: [{ txt: "Poupaste dinheiro a curto prazo.", isGood: true }, { txt: "A produtividade estagnou e a empresa parou no tempo.", isGood: false }] }]},
+
+            // --- MERCADO DE TRABALHO ---
+            { titulo: "💼 A Procura de Trabalho", texto: "A produtividade desceu. O que fazes à tua equipa?", opcoes: [{ textoBotao: "Baixo a Quantidade Procurada (Despeço).", resultados: [{ txt: "Adaptaste-te à quebra e a empresa sobreviveu.", isGood: true }, { txt: "Os que ficaram não aguentaram a carga. Fuga de talentos.", isGood: false }] }, { textoBotao: "Corto nos prémios em vez de despedir.", resultados: [{ txt: "Garantiste o emprego a todos num ano difícil.", isGood: true }, { txt: "Desemprego Friccional: os melhores demitiram-se.", isGood: false }] }]},
+            { titulo: "⚖️ O Salário Mínimo", texto: "O Estado impôs um Salário Mínimo acima do Preço de Equilíbrio.", opcoes: [{ textoBotao: "Substituo trabalhadores por máquinas.", resultados: [{ txt: "Mantiveste a rentabilidade face à nova lei.", isGood: true }, { txt: "As máquinas avariaram e o prejuízo foi enorme.", isGood: false }] }, { textoBotao: "Aumento o preço do meu produto.", resultados: [{ txt: "Os clientes valorizaram a tua empresa justa.", isGood: true }, { txt: "Ficaste caro demais e os clientes fugiram.", isGood: false }] }]},
+            { titulo: "⛱️ Desemprego Sazonal", texto: "Vendes Gelados. O Inverno chegou e a procura caiu a pique.", opcoes: [{ textoBotao: "Termino os contratos de Verão.", resultados: [{ txt: "Geriste a sazonalidade na perfeição.", isGood: true }, { txt: "No Verão seguinte não tinhas trabalhadores experientes.", isGood: false }] }, { textoBotao: "Produzo chocolates no inverno.", resultados: [{ txt: "Diversificaste o negócio com sucesso!", isGood: true }, { txt: "Ninguém quis os teus chocolates.", isGood: false }] }]},
+            { titulo: "📉 Desemprego Conjuntural", texto: "O país entrou em Recessão. As vendas param.", opcoes: [{ textoBotao: "Avanço com Lay-offs e suspendo produção.", resultados: [{ txt: "Cortaste custos a tempo e salvaste a empresa.", isGood: true }, { txt: "A crise foi curta e não tinhas stock para a retoma.", isGood: false }] }, { textoBotao: "Produzo para stock para quando a crise passar.", resultados: [{ txt: "Eras o único com produto na retoma!", isGood: true }, { txt: "A recessão durou anos e foste à bancarrota.", isGood: false }] }]},
+            { titulo: "🤖 Desemprego Tecnológico", texto: "Uma IA faz relatórios em 2 segundos.", opcoes: [{ textoBotao: "Despeço o departamento de análise.", resultados: [{ txt: "Poupança salarial monstruosa!", isGood: true }, { txt: "A IA cometeu um erro jurídico milionário.", isGood: false }] }, { textoBotao: "Uso a IA para apoiar a equipa humana.", resultados: [{ txt: "A empresa tornou-se a mais rápida do mercado.", isGood: true }, { txt: "A equipa usou a IA para trabalhar menos.", isGood: false }] }]},
+            { titulo: "🔄 Efeito Substituição", texto: "Impostos subiram. Trabalhar mais horas já não compensa face ao Lazer.", opcoes: [{ textoBotao: "Ofereço vales isentos de impostos.", resultados: [{ txt: "Contornaste o efeito substituição. Equipa focada.", isGood: true }, { txt: "O Estado multou-te por evasão fiscal.", isGood: false }] }, { textoBotao: "Obrigo a fazer horas extra.", resultados: [{ txt: "A política de pulso firme manteve a produção.", isGood: true }, { txt: "Metade da equipa demitiu-se em bloco.", isGood: false }] }]},
+            { titulo: "💸 Salários de Eficiência", texto: "Queres que os trabalhadores produzam mais e não se demitam.", opcoes: [{ textoBotao: "Pago 20% acima do salário de equilíbrio.", resultados: [{ txt: "Atraíste os melhores talentos!", isGood: true }, { txt: "Os custos salariais destruíram-te.", isGood: false }] }, { textoBotao: "Pago exatamente o que o mercado manda.", resultados: [{ txt: "Mantiveste os custos sob controlo.", isGood: true }, { txt: "Rotatividade enorme. Gastaste tudo a recrutar.", isGood: false }] }]},
+
+            // --- ESTRATÉGIAS DE GESTÃO, CUSTOS E ESCALA ---
+            { titulo: "📏 Economias de Escala", texto: "Expandir a fábrica baixa o Custo Médio unitário, se produzires o triplo.", opcoes: [{ textoBotao: "Avanço com a Mega-Fábrica.", resultados: [{ txt: "Os custos caíram a pique. Esmagaste os rivais.", isGood: true }, { txt: "Não vendeste o triplo. Prejuízo de armazém.", isGood: false }] }, { textoBotao: "Mantenho o tamanho atual.", resultados: [{ txt: "Garantiste lucro estável e sem dores de cabeça.", isGood: true }, { txt: "A concorrência fez a mega-fábrica e tirou-te do mercado.", isGood: false }] }]},
+            { titulo: "🧩 Deseconomias de Escala", texto: "A empresa cresceu tanto que a burocracia interna é um caos.", opcoes: [{ textoBotao: "Divido a empresa em 3 departamentos.", resultados: [{ txt: "Agilizaste os processos e a eficiência voltou.", isGood: true }, { txt: "Os departamentos começaram a competir entre si.", isGood: false }] }, { textoBotao: "Contrato mais gestores para controlar.", resultados: [{ txt: "Puseste ordem na casa e as metas foram atingidas.", isGood: true }, { txt: "A burocracia piorou e os custos afundaram-te.", isGood: false }] }]},
+            { titulo: "🧪 A Queda da Patente", texto: "A tua patente de 20 anos expirou. Surgiram os 'Genéricos'.", opcoes: [{ textoBotao: "Baixo o preço drasticamente.", resultados: [{ txt: "Mantiveste a tua quota de mercado.", isGood: true }, { txt: "Os lucros sumiram numa guerra de preços.", isGood: false }] }, { textoBotao: "Aposto no Marketing do 'Original'.", resultados: [{ txt: "A lealdade à marca salvou as tuas vendas.", isGood: true }, { txt: "Ninguém quis pagar mais pelo mesmo produto.", isGood: false }] }]},
+            { titulo: "🤝 Integração Conglomerada", texto: "Vendes roupa, mas queres comprar uma cadeia de ginásios.", opcoes: [{ textoBotao: "Compro os ginásios para diversificar risco.", resultados: [{ txt: "Diversificação genial! O ginásio deu muito lucro.", isGood: true }, { txt: "Perdeste o foco. Nenhum dos negócios funcionou.", isGood: false }] }, { textoBotao: "Foco-me apenas na roupa.", resultados: [{ txt: "Tornaste-te a líder de vendas nacional.", isGood: true }, { txt: "Crise no retalho. Não tinhas outro negócio para te salvar.", isGood: false }] }]},
+            { titulo: "🤫 Insider Trading (Ilegal)", texto: "Tens informação confidencial que a Bolsa vai afundar amanhã.", opcoes: [{ textoBotao: "Vendo as minhas ações hoje em segredo.", resultados: [{ txt: "Salvaste os teus milhões antes do crash!", isGood: true }, { txt: "A CMVM apanhou-te. Estás preso.", isGood: false }] }, { textoBotao: "Não uso a informação. É crime.", resultados: [{ txt: "A tua moralidade salvou-te da cadeia.", isGood: true }, { txt: "Perdeste milhões na bolsa no dia seguinte.", isGood: false }] }]},
+            { titulo: "🧮 Custo Irrecuperável (Sunk Cost)", texto: "Gastaste 1 Milhão numa máquina que não funciona bem.", opcoes: [{ textoBotao: "Abandono a máquina e compro outra.", resultados: [{ txt: "Fugiste à falácia do custo irrecuperável.", isGood: true }, { txt: "O investimento novo também falhou. Ruína.", isGood: false }] }, { textoBotao: "Gasto mais dinheiro para a consertar.", resultados: [{ txt: "O conserto resultou e ela operou 10 anos.", isGood: true }, { txt: "Era um buraco negro. A máquina voltou a avariar.", isGood: false }] }]},
+            { titulo: "🏢 Outsourcing", texto: "Podes despedir os contabilistas e contratar uma empresa indiana.", opcoes: [{ textoBotao: "Faço o outsourcing para cortar Custos Fixos.", resultados: [{ txt: "O serviço foi perfeito e poupaste fortunas.", isGood: true }, { txt: "Erros de faturação graves com o fuso horário.", isGood: false }] }, { textoBotao: "Mantenho a contabilidade interna.", resultados: [{ txt: "Segurança de dados e confiança blindada.", isGood: true }, { txt: "Despesas muito altas face aos rivais.", isGood: false }] }]},
+            { titulo: "🔄 Mercado Secundário", texto: "O teu produto dura muito. Há um mercado gigante de vendas de 2ª mão.", opcoes: [{ textoBotao: "Crio o meu programa de retoma de usados.", resultados: [{ txt: "Ganhas dinheiro 2 vezes com o mesmo produto!", isGood: true }, { txt: "A logística de arranjar usados deu prejuízo.", isGood: false }] }, { textoBotao: "Faço produtos que avariam em 3 anos.", resultados: [{ txt: "Tiveram de comprar novos. Lucraste.", isGood: true }, { txt: "União Europeia multou-te por obsolescência programada.", isGood: false }] }]},
+            
+            // --- EVENTOS MACRO E EXTERNOS ---
+            { titulo: "📉 Deflação Inesperada", texto: "Os preços caem a nível nacional. Clientes adiam compras.", opcoes: [{ textoBotao: "Corto a produção.", resultados: [{ txt: "Poupaste nos custos e sobreviveste.", isGood: true }, { txt: "Não tinhas produto quando a procura voltou.", isGood: false }] }, { textoBotao: "Mega campanha 'Compre já!'.", resultados: [{ txt: "A psicologia funcionou e vendeste tudo.", isGood: true }, { txt: "Gastaste em marketing e ninguém comprou.", isGood: false }] }]},
+            { titulo: "🧊 Procura Perfeitamente Rígida", texto: "O teu produto não tem substitutos e é de necessidade vital.", opcoes: [{ textoBotao: "Aumento o preço 100%.", resultados: [{ txt: "Fizeste lucros imorais mas milionários.", isGood: true }, { txt: "O Estado confiscou a empresa por especulação.", isGood: false }] }, { textoBotao: "Subo só a inflação.", resultados: [{ txt: "Crescimento sustentável e boa imagem.", isGood: true }, { txt: "A concorrência inventou um substituto.", isGood: false }] }]},
+            { titulo: "⏳ Teia de Aranha (Desfasamento)", texto: "Os preços do setor agrícola estão altos hoje, mas produzir demora 1 ano.", opcoes: [{ textoBotao: "Produzo o triplo para o ano.", resultados: [{ txt: "Dominaste as exportações sozinho.", isGood: true }, { txt: "Todos fizeram o mesmo. Excesso de oferta afundou o preço.", isGood: false }] }, { textoBotao: "Mantenho a produção normal.", resultados: [{ txt: "Vendeste tudo sem sobras a preço razoável.", isGood: true }, { txt: "Perdeste um ciclo de alta lucratividade.", isGood: false }] }]},
+            { titulo: "🏢 Ameaça de Oligopólio", texto: "Duas empresas grandes fundiram-se. Estás em desvantagem.", opcoes: [{ textoBotao: "Uno-me aos pequenos (Cooperativa).", resultados: [{ txt: "Ganharam poder de negociação e resistiram.", isGood: true }, { txt: "Os pequenos não se entenderam. Falhou.", isGood: false }] }, { textoBotao: "Aposto num nicho especializado.", resultados: [{ txt: "Os gigantes ignoraram o teu nicho e prosperaste.", isGood: true }, { txt: "O nicho era pequeno demais para te sustentar.", isGood: false }] }]},
+            { titulo: "⚔️ O Preço Predatório", texto: "Multinacional vende a metade do preço para te falir.", opcoes: [{ textoBotao: "Queixa no regulador por Dumping.", resultados: [{ txt: "A multinacional foi multada e subiu os preços.", isGood: true }, { txt: "O processo demorou 5 anos. Já tinhas falido.", isGood: false }] }, { textoBotao: "Fecho lojas e aguento o impacto.", resultados: [{ txt: "Sobreviveste até eles subirem os preços.", isGood: true }, { txt: "Encolheste tanto que te tornaste irrelevante.", isGood: false }] }]},
+            { titulo: "🏭 Bens Intermédios Caros", texto: "O preço do aço disparou. Tu produzes automóveis.", opcoes: [{ textoBotao: "Substituo peças por alumínio.", resultados: [{ txt: "Inovação salvou a produção e reduziu peso.", isGood: true }, { txt: "Clientes rejeitaram a qualidade do alumínio.", isGood: false }] }, { textoBotao: "Compro uma mina de aço (Integração).", resultados: [{ txt: "Dominaste os custos da indústria toda.", isGood: true }, { txt: "A gestão da mina foi um caos financeiro.", isGood: false }] }]},
+            { titulo: "🧠 Fuga de Informação", texto: "A receita do produto estrela foi roubada por um ex-funcionário.", opcoes: [{ textoBotao: "Lanço a 'Nova Fórmula'.", resultados: [{ txt: "Os clientes adoraram e esqueceram a velha.", isGood: true }, { txt: "A nova fórmula era horrível. Escândalo.", isGood: false }] }, { textoBotao: "Processo por roubo de propriedade.", resultados: [{ txt: "Ganhaste e fechaste a empresa rival.", isGood: true }, { txt: "Não tinhas provas. Gastaste fortunas legais.", isGood: false }] }]},
+            { titulo: "⏳ Rigidez da Oferta", texto: "Clientes querem 10 mil unidades amanhã. Só fazes 1000 por semana.", opcoes: [{ textoBotao: "Subcontrato fábricas concorrentes.", resultados: [{ txt: "Entregaste a tempo. Contrato milionário.", isGood: true }, { txt: "Fábrica subcontratada falhou. Foste processado.", isGood: false }] }, { textoBotao: "Aviso que demora 10 semanas.", resultados: [{ txt: "Cliente aceitou esperar pela tua qualidade.", isGood: true }, { txt: "Cliente cancelou a encomenda.", isGood: false }] }]},
+            { titulo: "📢 Assimetria de Marketing", texto: "O teu produto é excelente, mas o do concorrente (péssimo) vende mais.", opcoes: [{ textoBotao: "Testes cegos na imprensa.", resultados: [{ txt: "Ganhaste os testes! Opinião pública virou.", isGood: true }, { txt: "Concorrente subornou a imprensa e perdeste.", isGood: false }] }, { textoBotao: "Crio embalagem igual à dele.", resultados: [{ txt: "Clientes confundiram-se e compraram o teu.", isGood: true }, { txt: "Processado por plágio de imagem.", isGood: false }] }]},
+            { titulo: "🧊 Cartel Silencioso", texto: "Todos no setor começaram a subir os preços ao mesmo tempo sem combinar.", opcoes: [{ textoBotao: "Subo o preço também.", resultados: [{ txt: "Harmonia gerou margens fantásticas para todos.", isGood: true }, { txt: "Estado aplicou multas por cartelização aparente.", isGood: false }] }, { textoBotao: "Sou o único a manter baixo.", resultados: [{ txt: "Roubaste os clientes a todos os concorrentes!", isGood: true }, { txt: "O preço deles sinalizou qualidade, o teu não.", isGood: false }] }]},
+            { titulo: "🎁 Oferta Inelástica a Curto Prazo", texto: "Preço triplicou hoje, mas não consegues produzir mais rápido.", opcoes: [{ textoBotao: "Vendo reservas estratégicas.", resultados: [{ txt: "Vendeste stock velho a preço de ouro.", isGood: true }, { txt: "Reservas deterioradas. Devoluções em massa.", isGood: false }] }, { textoBotao: "Subo o preço e raciono vendas.", resultados: [{ txt: "Criaste exclusividade e faturaste imenso.", isGood: true }, { txt: "Clientes irritaram-se e boicotaram a loja.", isGood: false }] }]},
+            { titulo: "🌍 Efeito de Rede", texto: "O teu software só é bom se os amigos dos clientes o usarem.", opcoes: [{ textoBotao: "Pago para convidarem amigos.", resultados: [{ txt: "Crescimento exponencial! Rede gigante.", isGood: true }, { txt: "Criaram contas falsas para ganhar o dinheiro.", isGood: false }] }, { textoBotao: "Torno o software grátis com anúncios.", resultados: [{ txt: "Toda a gente instalou. Lucraste na publicidade.", isGood: true }, { txt: "Os anúncios irritaram os utilizadores.", isGood: false }] }]},
+            { titulo: "🏢 Poder de Negociação", texto: "O teu maior cliente (60% das vendas) exige 20% de desconto.", opcoes: [{ textoBotao: "Aceito o desconto.", resultados: [{ txt: "Mantiveste a fábrica a laborar.", isGood: true }, { txt: "A margem ficou negativa. Pagas para trabalhar.", isGood: false }] }, { textoBotao: "Digo não e diversifico clientes.", resultados: [{ txt: "Arranjaste dezenas de pequenos clientes.", isGood: true }, { txt: "Ele foi-se embora e despediste meia empresa.", isGood: false }] }]}
+        ];
+
+        let piscinaTotal = [];
+        for(let i=0; i<5; i++) {
+            piscinaTotal = piscinaTotal.concat(eventosPossiveis);
+        }
+        piscinaTotal = piscinaTotal.slice(0, 100);
+
+        function gerarCasasAleatorias() {
+            especial = {}; 
+            let casasDisponiveis = [];
+            for(let i=2; i<=98; i++) casasDisponiveis.push(i);
+            
+            casasDisponiveis.sort(() => Math.random() - 0.5);
+            
+            for(let i=0; i < 75; i++) {
+                let casaSorteada = casasDisponiveis[i];
+                especial[casaSorteada] = Object.assign({}, piscinaTotal[i]);
+            }
+
+            // ⚠️ O CAOS DE MERCADO NAS ÚLTIMAS CASAS (SWAPS DE LUCRO) ⚠️
+            especial[88] = { isInstantSwap: true, swapType: 'first', titulo: "🚀 OPA HOSTIL!", texto: "Fizeste uma Oferta Pública de Aquisição à principal empresa rival! Trocaste de Posição e roubaste o Lucro ao 1º Classificado!" };
+            especial[94] = { isInstantSwap: true, swapType: 'last', titulo: "📉 MULTA DA CONCORRÊNCIA!", texto: "A Autoridade da Concorrência apanhou-te num Cartel de preços. Trocaste de Posição e Lucro com o Último classificado!" };
+            especial[98] = { isInstantSwap: true, swapType: 'random', titulo: "🎲 CRASH NA BOLSA!", texto: "Os mercados financeiros entraram em pânico! Vais trocar a tua cotação (Posição e Lucro) com uma Empresa à sorte!" };
+        }
+
+        function iniciarJogo() {
+            let numInput = document.getElementById('num-players').value;
+            let num = parseInt(numInput, 10);
+            if (isNaN(num) || num < 2 || num > 20) num = 4; 
+            
+            players = [];
+            for(let i = 0; i < num; i++) {
+                let corDoJogador = colors[i % colors.length]; 
+                players.push({ id: i, name: `Empresa ${i+1}`, pos: 1, pe: 100, color: corDoJogador, skip: 0, shield: false, finished: false });
+                // NOTA: Começam com 100 de Lucro para não falirem à primeira falha!
+            }
+
+            document.getElementById('setup-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'flex';
+            
+            gerarCasasAleatorias(); 
+            criarTabuleiro();
+            criarPeoes();
+            atualizarPainel();
+        }
+
+        function criarTabuleiro() {
+            boardDiv.innerHTML = ""; 
+            for (let row = 9; row >= 0; row--) {
+                for (let col = 0; col < 10; col++) {
+                    let cellNum = (row % 2 === 1) ? (row * 10 + (10 - col)) : (row * 10 + (col + 1));
+                    let cellDiv = document.createElement('div');
+                    cellDiv.className = 'cell';
+                    if(cellNum === 1) cellDiv.classList.add('start');
+                    if(cellNum === 100) cellDiv.classList.add('finish');
+                    
+                    if(cellNum === 88 || cellNum === 94 || cellNum === 98) {
+                        cellDiv.classList.add('trap');
+                    }
+
+                    cellDiv.innerText = (cellNum === 100) ? "👑" : cellNum;
+                    cellDiv.id = 'cell-' + cellNum;
+                    boardDiv.appendChild(cellDiv);
+                    
+                    setTimeout(() => {
+                        let rect = cellDiv.getBoundingClientRect();
+                        let containerRect = boardContainer.getBoundingClientRect();
+                        cellsCoords[cellNum] = { x: rect.left - containerRect.left + 30, y: rect.top - containerRect.top + 30 };
+                        if (cellNum === 100) atualizarPosicoes(); 
+                    }, 200);
+                }
+            }
+        }
+
+        function criarPeoes() {
+            document.querySelectorAll('.player').forEach(p => p.remove());
+            players.forEach(p => {
+                let pDiv = document.createElement('div');
+                pDiv.className = 'player';
+                pDiv.id = 'p-' + p.id;
+                pDiv.style.backgroundColor = p.color;
+                boardContainer.appendChild(pDiv);
+            });
+        }
+
+        function atualizarPosicoes() {
+            let raio = 15;
+            players.forEach((p, index) => {
+                let pDiv = document.getElementById('p-' + p.id);
+                if(pDiv && cellsCoords[p.pos]) {
+                    let angulo = (index / players.length) * (2 * Math.PI);
+                    let offsetX = raio * Math.cos(angulo);
+                    let offsetY = raio * Math.sin(angulo);
+                    
+                    if (p.pos === 1 || p.pos === 100) {
+                         offsetX = (index % 4) * 8 - 12;
+                         offsetY = Math.floor(index / 4) * 8 - 12;
+                    }
+                    
+                    pDiv.style.left = (cellsCoords[p.pos].x + offsetX) + 'px';
+                    pDiv.style.top = (cellsCoords[p.pos].y + offsetY) + 'px';
+                }
+            });
+        }
+
+        function atualizarPainel() {
+            if(gameEnded) return;
+            
+            let scoreHtml = '<h3>Ranking (Lucro 💰)</h3>';
+            let sortedPlayers = [...players].sort((a,b) => b.pe - a.pe);
+
+            sortedPlayers.forEach(p => {
+                let border = (!p.finished && p.id === players[currentTurn].id) ? `border: 2px solid ${p.color}; font-weight: bold;` : '';
+                let icons = "";
+                if (p.finished) icons += "👑 ";
+                if (p.shield) icons += "🛡️ ";
+                if (p.skip > 0) icons += "⏳ ";
+
+                scoreHtml += `<div class="team-score" style="${border} border-left: 10px solid ${p.color};">
+                    ${p.name}: <b>${p.pe} 💰</b> <small>(Casa ${p.pos})</small>
+                    <div class="status-icons">${icons}</div>
+                </div>`;
+            });
+            document.getElementById('scores').innerHTML = scoreHtml;
+            
+            let pAtual = players[currentTurn];
+            if (!pAtual.finished) {
+                document.getElementById('turn-indicator').innerText = `Turno: ${pAtual.name}`;
+                document.getElementById('turn-indicator').style.color = pAtual.color;
+            }
+        }
+
+        function passarTurno() {
+            if(gameEnded) return;
+            
+            let ativos = players.filter(p => !p.finished);
+            if (ativos.length <= 1) {
+                avaliarVitoriaFinal();
+                return;
+            }
+
+            do {
+                currentTurn = (currentTurn + 1) % players.length;
+            } while (players[currentTurn].finished);
+
+            atualizarPainel();
+            document.getElementById('btn-roll').disabled = false;
+            document.getElementById('dice-display').innerText = "🎲";
+            isMoving = false;
+        }
+
+        function lancarDado() {
+            if(isMoving || gameEnded) return;
+            isMoving = true;
+            document.getElementById('btn-roll').disabled = true;
+            
+            let p = players[currentTurn];
+            let diceDiv = document.getElementById('dice-display');
+            
+            let tempoAnimacao = 0;
+            let anim = setInterval(() => {
+                diceDiv.innerText = Math.floor(Math.random() * 6) + 1;
+                tempoAnimacao += 100;
+                if(tempoAnimacao > 1000) {
+                    clearInterval(anim);
+                    let dadoFinal = Math.floor(Math.random() * 6) + 1;
+                    diceDiv.innerText = dadoFinal;
+                    setTimeout(() => moverPeao(p, dadoFinal), 500);
+                }
+            }, 100);
+        }
+
+        function avaliarVitoriaFinal() {
+            gameEnded = true;
+            let finalistas = players.filter(p => p.finished);
+            let desqualificado = players.find(p => !p.finished); 
+            
+            if (finalistas.length === 0) finalistas = players; 
+
+            let vencedor = finalistas[0];
+            finalistas.forEach(p => { if(p.pe > vencedor.pe) vencedor = p; });
+
+            document.getElementById('modal-title').innerText = "🎉 FIM DO EXERCÍCIO FISCAL! 🎉";
+            
+            let msgTexto = `A Bolsa de Valores fechou!<br><br>`;
+            if (desqualificado) {
+                msgTexto += `<span style="color:#e74c3c; font-size:18px;">🛑 A <b>${desqualificado.name}</b> faliu por não acompanhar o mercado e foi eliminada!</span><br><br>`;
+            }
+            msgTexto += `A Empresa que gerou mais Lucro (💰) a dominar as Forças de Mercado foi:<br><br><b><span style="color:${vencedor.color}; font-size:32px;">${vencedor.name}</span></b><br>com uns incríveis <b>${vencedor.pe} 💰!</b>`;
+
+            document.getElementById('modal-text').innerHTML = msgTexto;
+            document.getElementById('modal-choices').innerHTML = "";
+            document.getElementById('modal-btn').style.display = "none"; 
+            document.getElementById('modal-overlay').style.display = 'flex';
+        }
+
+        function moverPeao(jogador, dado) {
+            let novaPos = jogador.pos + dado;
+            
+            if (novaPos >= 100) {
+                jogador.pos = 100;
+                jogador.finished = true; 
+                atualizarPosicoes();
+                atualizarPainel();
+                mostrarMensagemSimples("👑 Dominaste o Mercado!", `Parabéns ${jogador.name}, garantiste o topo da Bolsa! O teu Lucro está guardado. Aguarda que a concorrência termine.`);
+                return;
+            }
+            
+            jogador.pos = novaPos;
+            atualizarPosicoes(); 
+            atualizarPainel();
+
+            setTimeout(() => {
+                if (especial[novaPos]) {
+                    if (especial[novaPos].isInstantSwap) {
+                        aplicarSwapInstantaneo(especial[novaPos], novaPos);
+                    } else {
+                        mostrarDecisao(especial[novaPos], novaPos);
+                    }
+                } else {
+                    mostrarMensagemSimples("Caminho Livre 📈", `Aterraste em segurança na casa ${novaPos}. O mercado está calmo.`);
+                }
+            }, 700);
+        }
+
+        function mostrarDecisao(evento, casaAtual) {
+            document.getElementById('modal-title').innerText = evento.titulo;
+            document.getElementById('modal-text').innerHTML = `<b>Dinâmica de Mercado:</b><br>${evento.texto}<br><br><i>Qual é a tua estratégia?</i>`;
+            
+            let choicesDiv = document.getElementById('modal-choices');
+            choicesDiv.innerHTML = ""; 
+            document.getElementById('modal-btn').style.display = "none"; 
+
+            evento.opcoes.forEach(opcao => {
+                let btn = document.createElement('button');
+                btn.className = 'choice-btn';
+                btn.innerText = opcao.textoBotao;
+                btn.onclick = () => aplicarEscolha(opcao, casaAtual);
+                choicesDiv.appendChild(btn);
+            });
+
+            document.getElementById('modal-overlay').style.display = 'flex';
+        }
+
+        function aplicarEscolha(opcao, casaAtual) {
+            let p = players[currentTurn];
+            
+            let sorteioIndex = Math.floor(Math.random() * opcao.resultados.length);
+            let resultadoFinal = opcao.resultados[sorteioIndex];
+
+            let isBad = !resultadoFinal.isGood;
+            let resultText = `<b>A tua Estratégia:</b> ${opcao.textoBotao}<br><br><b>O que aconteceu:</b> ${resultadoFinal.txt}<br><br>`;
+
+            // Se for escudo (apenas cosmético se existissem, mas aqui temos matemática direta)
+            if (isBad && p.shield) {
+                p.shield = false; 
+                resultText += `<span style="color:#f39c12;">🛡️ <b>RESERVA FINANCEIRA!</b> O teu fundo de maneio protegeu-te deste azar!</span>`;
+            } else {
+                // Matemática de Mercado
+                let moveVal = 0;
+                let lucroVal = 0;
+
+                if (!isBad) {
+                    moveVal = Math.floor(Math.random() * 4) + 1; // +1 a 4
+                    lucroVal = moveVal * (Math.floor(Math.random() * 20) + 20); // +20 a +80 Lucro
+                } else {
+                    moveVal = -(Math.floor(Math.random() * 4) + 1); // -1 a -4
+                    lucroVal = moveVal * (Math.floor(Math.random() * 20) + 20); // Perde Lucro
+                }
+
+                p.pe += lucroVal;
+                p.pos += moveVal;
+
+                if (resultadoFinal.shield) p.shield = true;
+                
+                let efeitos = [];
+                efeitos.push(`${lucroVal > 0 ? '+' : ''}${lucroVal} 💰`);
+                efeitos.push(`${moveVal > 0 ? 'Avanças' : 'Recuas'} ${Math.abs(moveVal)} casas`);
+
+                if(p.pos < 1) p.pos = 1;
+                if(p.pos > 100) p.pos = 100; 
+                
+                atualizarPosicoes();
+
+                if (efeitos.length > 0) resultText += `<b>Impacto no Negócio:</b> ${efeitos.join(' | ')}`;
+            }
+
+            // Não apagamos a casa (Rejogabilidade)
+
+            document.getElementById('modal-text').innerHTML = resultText;
+            document.getElementById('modal-choices').innerHTML = ""; 
+            document.getElementById('modal-btn').style.display = "inline-block"; 
+            atualizarPainel();
+        }
+
+        // AS ARMADILHAS DE SWAP DE MERCADO
+        function aplicarSwapInstantaneo(evento, casaAtual) {
+            let p = players[currentTurn];
+            let resultText = `<b>${evento.texto}</b><br><br>`;
+            
+            let ativos = players.filter(j => !j.finished); 
+            let target = p;
+            let type = evento.swapType;
+
+            if (type === 'random') {
+                type = Math.random() > 0.5 ? 'first' : 'last';
+            }
+
+            if (type === 'first') {
+                ativos.forEach(j => { if (j.pos > target.pos) target = j; });
+                if (target.id === p.id) {
+                    ativos.forEach(j => { if (j.pos < target.pos) target = j; });
+                    resultText += `Eras o Líder de Mercado! Uma bolha especulativa rebentou e caíste para Último! 📉`;
+                } else {
+                    resultText += `OPA Aprovada! Assumiste a liderança de mercado do 1º classificado! 🚀`;
+                }
+            } else {
+                ativos.forEach(j => { if (j.pos < target.pos) target = j; });
+                if (target.id === p.id) {
+                    resultText += `Já eras o último da bolsa, não ficas pior. Sobreviveste!`;
+                } else {
+                    resultText += `A tua empresa sofreu um ataque informático! Caíste para o Último lugar! 📉`;
+                }
+            }
+            
+            if (target.id !== p.id) {
+                resultText += `<br><br><span style="color:#f39c12;"><b>🔄 ATENÇÃO: Trocaste fisicamente de Posição E roubaste o Lucro (💰) dessa empresa!</b></span>`;
+                
+                let tempPos = p.pos;
+                p.pos = target.pos;
+                target.pos = tempPos;
+
+                let tempPe = p.pe;
+                p.pe = target.pe;
+                target.pe = tempPe;
+            }
+
+            delete especial[casaAtual]; // Casas de swap desaparecem após uso
+            atualizarPosicoes();
+            atualizarPainel();
+
+            mostrarMensagemSimples(evento.titulo, resultText);
+        }
+
+        function mostrarMensagemSimples(titulo, texto) {
+            document.getElementById('modal-title').innerText = titulo;
+            document.getElementById('modal-text').innerHTML = texto;
+            document.getElementById('modal-choices').innerHTML = "";
+            document.getElementById('modal-btn').style.display = "inline-block";
+            document.getElementById('modal-overlay').style.display = 'flex';
+        }
+
+        function fecharModalAposEscolha() {
+            document.getElementById('modal-overlay').style.display = 'none';
+            setTimeout(passarTurno, 400); 
+        }
+    </script>
+</body>
+</html>

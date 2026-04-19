@@ -434,7 +434,7 @@ export default function LoginWizard({ disabled, args }: ComponentProps) {
                 O jeito divertido e eficaz de aprender com o teu tutor inteligente.
               </h1>
               <p className="max-w-md text-lg font-semibold text-slate-600">
-                Perguntas, quizzes e resumos ao teu ritmo — com a Watty ao teu lado.
+                Perguntas, quizzes e resumos ao teu ritmo — com o Watty ao teu lado.
               </p>
               <div className="mt-2 flex w-full max-w-md flex-col gap-3 sm:flex-row sm:justify-start">
                 <button
@@ -467,7 +467,7 @@ export default function LoginWizard({ disabled, args }: ComponentProps) {
             <div className="mx-auto max-w-6xl space-y-0 px-4 py-16 sm:px-8">
               <MarketingBlock
                 title="Aprende ao teu ritmo"
-                body="A Watty adapta-se ao teu ano e disciplina, para praticares o que realmente importa na escola."
+                body="O Watty adapta-se ao teu ano e disciplina, para praticares o que realmente importa na escola."
                 imageSrc={publicAsset("watty1.png")}
                 imageAlt="Watty a estudar ao teu ritmo"
                 imageLeft
@@ -964,7 +964,7 @@ function MarketingBlock({
       <img
         src={imageSrc}
         alt={imageAlt}
-        className="h-auto w-full max-w-[280px] object-contain sm:max-w-xs md:max-w-sm"
+        className="h-auto w-full max-w-[min(100%,17.5rem)] object-contain sm:max-w-xs md:max-w-sm"
         onLoad={onImageLoad}
       />
     </div>

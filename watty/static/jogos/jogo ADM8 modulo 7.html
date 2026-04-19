@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Economia Módulo 7: O Grande Governo (Simulador)</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1e272e; color: #ecf0f1; text-align: center; margin: 0; padding: 20px; overflow-x: hidden; }
+        h1 { color: #f1c40f; text-shadow: 2px 2px 4px rgba(0,0,0,0.6); margin-bottom: 5px; font-size: 38px;}
+        h2 { color: #3498db; margin-top: 0; font-weight: normal; }
+        
+        #setup-screen { background: #2c3e50; padding: 40px; border-radius: 15px; display: inline-block; margin-top: 50px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        input[type="number"] { padding: 10px; font-size: 18px; width: 80px; text-align: center; border-radius: 5px; border: none; margin: 10px; font-weight: bold;}
+        
+        button { background-color: #27ae60; color: white; border: none; padding: 15px 25px; font-size: 18px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; box-shadow: 0 4px 0 #219653; margin-top: 15px;}
+        button:hover { background-color: #219653; transform: translateY(2px); box-shadow: 0 2px 0 #1e8449; }
+        button.danger { background-color: #e74c3c; box-shadow: 0 4px 0 #c0392b; }
+        button.danger:hover { background-color: #c0392b; box-shadow: 0 2px 0 #922b21; }
+        
+        #game-screen { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 1400px; margin: 0 auto; }
+        
+        #year-header { background: #34495e; width: 100%; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); border-left: 10px solid #f1c40f;}
+        
+        .projects-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+        .project-card { background: #ecf0f1; color: #2c3e50; padding: 15px; border-radius: 8px; width: 260px; text-align: left; box-shadow: 0 4px 8px rgba(0,0,0,0.3); border-top: 5px solid #f1c40f; position: relative;}
+        .project-cost { font-weight: bold; color: #e67e22; font-size: 18px;}
+        .project-cost.income { color: #27ae60; }
+        .dice-icon { position: absolute; top: 10px; right: 10px; font-size: 24px; opacity: 0.7;}
+        
+        .dashboard { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; width: 100%; }
+        
+        .player-card { background: #2c3e50; padding: 20px; border-radius: 10px; width: 340px; text-align: left; box-shadow: 0 5px 15px rgba(0,0,0,0.4); border-top: 8px solid; position: relative; transition: all 0.5s;}
+        .player-card.eliminated { opacity: 0.5; filter: grayscale(100%); pointer-events: none; }
+        .eliminated-stamp { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg); color: #e74c3c; border: 4px solid #e74c3c; padding: 10px; font-size: 24px; font-weight: bold; border-radius: 10px; background: rgba(0,0,0,0.9); z-index: 10; display: none; text-align: center;}
+        .player-card.eliminated .eliminated-stamp { display: block; }
+
+        .stat-row { display: flex; justify-content: space-between; align-items: center; margin: 10px 0; font-weight: bold;}
+        
+        .bar-bg { background: #7f8c8d; height: 15px; border-radius: 8px; width: 100%; overflow: hidden; margin-top: 5px;}
+        .bar-fill { height: 100%; transition: width 1s ease-in-out; }
+        .bar-stars { background: #f1c40f; }
+        .bar-revolt { background: #e74c3c; }
+
+        .checkbox-group { margin-top: 15px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;}
+        .checkbox-row { display: flex; align-items: center; margin-bottom: 8px; cursor: pointer;}
+        .checkbox-row input { transform: scale(1.5); margin-right: 10px; cursor: pointer;}
+        
+        #modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100; justify-content: center; align-items: center; }
+        #modal-box { background: #ecf0f1; color: #2c3e50; padding: 30px; border-radius: 15px; max-width: 800px; text-align: center; box-shadow: 0 0 50px rgba(241, 196, 15, 0.5); font-size: 18px; border-top: 10px solid #f1c40f; max-height: 85vh; overflow-y: auto;}
+        
+        .report-section { background: white; margin-bottom: 15px; border-radius: 10px; padding: 15px; text-align: left; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-left: 8px solid; }
+        .report-event { color: #8e44ad; font-style: italic; margin-top: 5px; font-weight: bold;}
+        .report-project { margin: 8px 0; padding-bottom: 8px; border-bottom: 1px dashed #bdc3c7;}
+        .report-project.success { color: #27ae60; }
+        .report-project.fail { color: #c0392b; }
+        .fatal { color: #e74c3c; font-weight: bold; font-size: 20px; text-align: center; margin-top: 10px;}
+    </style>
+</head>
+<body>
+
+    <div id="setup-screen">
+        <h1>📈 Módulo 7: O Grande Governo</h1>
+        <h2>Crescimento, Desenvolvimento e Flutuações</h2>
+        <p>A tua Nação começa com <b>500💰 (PIB)</b>. O objetivo é maximizar o <b>IDH (⭐)</b> em 15 Anos.<br><b>Atenção:</b> Se o PIB for negativo, o FMI intervém. Se a <b>Tensão Social / Desigualdade (😡) passar de 10</b>, o Governo Cai!</p>
+        <h2>Quantas Nações vão jogar? (2 a 20)</h2>
+        <input type="number" id="num-players" min="2" max="20" value="4"><br>
+        <button onclick="iniciarJogo()">Tomar Posse do Governo!</button>
+    </div>
+
+    <div id="game-screen">
+        <div id="year-header">
+            <h1 id="year-title" style="margin:0;">Ano 1 de 15</h1>
+            <h3 id="year-desc" style="margin-top:5px; color:#bdc3c7;">As decisões de política económica definirão o país.</h3>
+            <div class="projects-container" id="projects-ui">
+                </div>
+            <button class="danger" onclick="processarAno()">Aprovar Orçamento de Estado 🎲</button>
+        </div>
+        
+        <div class="dashboard" id="dashboard-ui">
+            </div>
+    </div>
+
+    <div id="modal-overlay">
+        <div id="modal-box">
+            <h1 id="modal-title">Relatório do Estado da Nação</h1>
+            <div id="modal-text"></div>
+            <button id="modal-btn" onclick="avancarAno()" style="margin-top:20px;">Começar Novo Ano Económico</button>
+        </div>
+    </div>
+
+    <script>
+        let players = [];
+        let currentYear = 1;
+        const maxYears = 15;
+        
+        const colors = ["#e74c3c", "#3498db", "#2ecc71", "#9b59b6", "#f39c12", "#1abc9c", "#e67e22", "#34495e", "#ff9ff3", "#0abde3"];
+        
+        // EVENTOS MACROECONÓMICOS GLOBAIS (Imprevistos)
+        const imprevistosGlobais = [
+            { txt: "Ciclo de Expansão Global! Exportações sobem.", m: 60, e: 0, r: -1 },
+            { txt: "Crise Energética Internacional. Preços sobem (Inflação).", m: -40, e: 0, r: 2 },
+            { txt: "Revolução Tecnológica! Spillovers aumentam produtividade.", m: 50, e: 1, r: 0 },
+            { txt: "O Banco Central Europeu aumentou os juros. Crédito caro.", m: -30, e: 0, r: 1 },
+            { txt: "Fundos da União Europeia aprovados para a Nação!", m: 80, e: 1, r: -1 },
+            { txt: "Fuga de Capitais! Investidores assustados com a região.", m: -50, e: 0, r: 2 },
+            { txt: "Seca extrema atinge o setor primário.", m: -20, e: 0, r: 1 },
+            { txt: "Ondas migratórias aumentam a população ativa.", m: 30, e: 0, r: 1 },
+            { txt: "Aumento brutal do fosso entre ricos e pobres (Índice de Gini piora).", m: 0, e: -1, r: 3 },
+            { txt: "O país subiu no ranking mundial do IDH!", m: 10, e: 2, r: -2 }
+        ];
+
+        // 15 ANOS: MATÉRIA DO MÓDULO 7 (Crescimento, Desenv., Políticas Económicas, Externalidades, etc)
+        const timeline = [
+            { titulo: "O Motor do Crescimento", desc: "Sem investimento não há produção. Como alocar os recursos?", projetos: [
+                { nome: "Investir em Capital Humano", custoBase: 60, desc: "Apostar na Educação e Saúde pública.", s: { txt: "A produtividade disparou a longo prazo!", e: 4, r: -2, m: 0 }, f: { txt: "Fuga de cérebros: os formados emigraram.", e: 0, r: 1, m: -20 } },
+                { nome: "Atrair Indústria Pesada", custoBase: -40, desc: "Incentivos fiscais a grandes fábricas (Gera Receita).", s: { txt: "Crescimento do PIB garantido pelo Setor Secundário.", e: 1, r: 0, m: 50 }, f: { txt: "A poluição gerou doenças respiratórias.", e: -2, r: 3, m: -10 } },
+                { nome: "Modernizar Infraestruturas", custoBase: 70, desc: "Construir vias de comunicação (Capital Fixo).", s: { txt: "As empresas reduziram custos de transação.", e: 2, r: -1, m: 20 }, f: { txt: "As obras públicas derraparam milhões.", e: 0, r: 2, m: -40 } },
+                { nome: "Cortar Direitos Laborais", custoBase: -30, desc: "Facilitar despedimentos para atrair investimento.", s: { txt: "O PIB cresceu com a atração de multinacionais.", e: -1, r: 1, m: 60 }, f: { txt: "O índice de Gini piorou imenso. Tensão extrema.", e: -2, r: 4, m: 0 } }
+            ]},
+            { titulo: "Falhas de Mercado", desc: "O mercado livre tem imperfeições graves. Como intervir?", projetos: [
+                { nome: "Lei Anti-Monopólio", custoBase: 20, desc: "Regulador da Concorrência trava grandes empresas.", s: { txt: "Preços mais baixos protegeram o nível de vida.", e: 2, r: -2, m: 0 }, f: { txt: "As grandes empresas ameaçaram sair do país.", e: 0, r: 2, m: -30 } },
+                { nome: "Privatizar a Justiça", custoBase: -80, desc: "Vender a justiça a privados (Bem Público).", s: { txt: "Estado encaixou fundos maciços no curto prazo.", e: -2, r: 2, m: 100 }, f: { txt: "O Estado de Direito ruiu. Incerteza afastou negócio.", e: -4, r: 5, m: -50 } },
+                { nome: "Imposto sobre Externalidades", custoBase: -40, desc: "Aplicar taxas ambientais a fábricas poluidoras.", s: { txt: "Ambiente melhorou e o Estado faturou.", e: 2, r: 0, m: 60 }, f: { txt: "Fábricas repassaram o custo aos consumidores.", e: -1, r: 3, m: 0 } },
+                { nome: "Providência Social", custoBase: 50, desc: "Subsídio para desempregados e famílias.", s: { txt: "O IDH subiu e a coesão social manteve a paz.", e: 3, r: -3, m: 0 }, f: { txt: "Aumento das fraudes no acesso aos subsídios.", e: 0, r: 1, m: -20 } }
+            ]},
+            { titulo: "O Fantasma da Recessão", desc: "Ciclo económico: O desemprego estrutural está a subir. PIB contrai.", projetos: [
+                { nome: "Política Monetária Expansionista", custoBase: 10, desc: "Banco Central baixa a Taxa de Juro.", s: { txt: "Crédito fácil reanimou o consumo e investimento!", e: 2, r: -2, m: 40 }, f: { txt: "O dinheiro barato gerou uma bolha especulativa.", e: 0, r: 2, m: -30 } },
+                { nome: "Política Orçamental Expansionista", custoBase: 80, desc: "Baixar impostos e investir em Obras Públicas.", s: { txt: "A Economia foi salva do abismo!", e: 3, r: -2, m: 0 }, f: { txt: "O Défice Público descontrolou-se.", e: 0, r: 1, m: -60 } },
+                { nome: "Austeridade Severa", custoBase: -60, desc: "Cortar apoios sociais para salvar o défice.", s: { txt: "Os mercados financeiros aplaudiram as contas certas.", e: -1, r: 2, m: 80 }, f: { txt: "O país afundou numa Depressão Económica.", e: -3, r: 5, m: -20 } },
+                { nome: "Rendimento Social Básico", custoBase: 40, desc: "Dar poder de compra direto às famílias.", s: { txt: "A procura interna sustentou as empresas locais.", e: 2, r: -3, m: 0 }, f: { txt: "Gerou défice sem aumentar a produção real.", e: 0, r: 1, m: -20 } }
+            ]},
+            { titulo: "A Ameaça da Inflação", desc: "Auge (Pico) do Ciclo! Economia sobreaqueceu e os preços disparam.", projetos: [
+                { nome: "Política Monetária Contracionista", custoBase: 10, desc: "Aumentar Juros para travar a economia.", s: { txt: "Inflação controlada. Poder de compra salvo.", e: 1, r: -1, m: 20 }, f: { txt: "Taxas sufocaram quem tinha crédito habitação.", e: -1, r: 4, m: -10 } },
+                { nome: "Congelar Salários", custoBase: -30, desc: "Impedir aumentos para não gerar espiral inflacionista.", s: { txt: "Inflação estabilizou rapidamente.", e: -1, r: 2, m: 40 }, f: { txt: "Rendimento Real caiu. Greve Geral!", e: -2, r: 5, m: -20 } },
+                { nome: "Emitir Dívida Pública", custoBase: -50, desc: "Vender títulos do tesouro no mercado aberto.", s: { txt: "Retirou-se liquidez excessiva do mercado.", e: 0, r: 0, m: 60 }, f: { txt: "Os juros da dívida ficaram insustentáveis.", e: 0, r: 1, m: -40 } },
+                { nome: "Incentivo à Oferta", custoBase: 60, desc: "Subsidiar empresas para produzirem mais bens.", s: { txt: "Mais produtos no mercado fizeram cair os preços.", e: 3, r: -2, m: 0 }, f: { txt: "Empresas embolsaram os subsídios e não produziram mais.", e: 0, r: 2, m: -40 } }
+            ]},
+            { titulo: "A Era da Globalização", desc: "Os mercados abrem-se. Oportunidades e ameaças externas.", projetos: [
+                { nome: "Aderir ao Mercado Livre", custoBase: 20, desc: "Abolir barreiras alfandegárias.", s: { txt: "As Exportações explodiram! Benefício absoluto.", e: 2, r: -1, m: 60 }, f: { txt: "Empresas nacionais não aguentaram a concorrência estrangeira.", e: -1, r: 3, m: -20 } },
+                { nome: "Protecionismo Alfandegário", custoBase: -40, desc: "Taxar importações para proteger indústria local.", s: { txt: "Indústria local cresceu e garantiu emprego.", e: 0, r: -2, m: 50 }, f: { txt: "Retaliação! Outros países fecharam portas às vossas exportações.", e: -1, r: 2, m: -50 } },
+                { nome: "Atrair Investimento Direto Estrangeiro", custoBase: 30, desc: "Facilitar vistos e licenças.", s: { txt: "Transferência de tecnologia (Spillovers) impulsionou o país.", e: 3, r: 0, m: 40 }, f: { txt: "Multinacionais repatriaram lucros. Nação ficou pobre.", e: 0, r: 1, m: -30 } },
+                { nome: "Apoiar PMEs Locais", custoBase: 50, desc: "Injetar capital nas pequenas empresas.", s: { txt: "O tecido empresarial ficou forte e coeso.", e: 3, r: -2, m: 20 }, f: { txt: "Muitas PMEs eram empresas 'zombie' e faliram na mesma.", e: 0, r: 1, m: -40 } }
+            ]},
+            { titulo: "Crescimento vs Desenvolvimento", desc: "A Nação cresce no PIB, mas o Povo sente-se pobre. Foco na Qualidade.", projetos: [
+                { nome: "Redistribuição de Rendimentos", custoBase: 70, desc: "Cobrar mais aos ricos para serviços públicos.", s: { txt: "O Índice de Gini melhorou. País mais igualitário!", e: 5, r: -4, m: 0 }, f: { txt: "Os ricos transferiram fortunas para offshores.", e: 0, r: 1, m: -60 } },
+                { nome: "Privatizar a Água e Energia", custoBase: -100, desc: "Vender setores chave a privados.", s: { txt: "O Estado lucrou de forma gigantesca.", e: -2, r: 2, m: 150 }, f: { txt: "Os preços dispararam e a pobreza energética explodiu.", e: -4, r: 6, m: 0 } },
+                { nome: "Saúde Materno-Infantil", custoBase: 40, desc: "Melhorar a esperança de vida (Medidor do IDH).", s: { txt: "Mortalidade infantil a zeros! Subiste no ranking global.", e: 4, r: -2, m: 0 }, f: { txt: "Corrupção na compra de equipamentos médicos.", e: 0, r: 2, m: -30 } },
+                { nome: "Foco exclusivo no PIB", custoBase: -30, desc: "Ignorar o IDH, produzir a todo o custo.", s: { txt: "Crescimento quantitativo bruto alcançado.", e: -2, r: 1, m: 80 }, f: { txt: "Crescimento sem desenvolvimento gerou revolta.", e: -3, r: 4, m: 0 } }
+            ]},
+            { titulo: "O Limite do Planeta", desc: "Pegada Ecológica ultrapassa a Biocapacidade. Deficit Ecológico grave.", projetos: [
+                { nome: "Transição Energética Limpa", custoBase: 90, desc: "Fechar centrais a carvão. Apoiar Renováveis.", s: { txt: "Arranque do Desenvolvimento Sustentável real.", e: 5, r: -1, m: 0 }, f: { txt: "A energia ficou cara e indústrias fecharam.", e: 1, r: 3, m: -40 } },
+                { nome: "Ignorar o Limite Planetário", custoBase: -50, desc: "Extrair recursos ao máximo (Madeira, Minas).", s: { txt: "Dinheiro rápido para os cofres do Estado.", e: -3, r: 1, m: 100 }, f: { txt: "Desastres climáticos destruíram infraestruturas.", e: -5, r: 4, m: -80 } },
+                { nome: "Economia Circular", custoBase: 60, desc: "Legislar o fim da obsolescência programada.", s: { txt: "Menos desperdício, mais eficiência material.", e: 4, r: -2, m: 20 }, f: { txt: "Empresas recusaram-se a cumprir as regras.", e: 0, r: 2, m: -10 } },
+                { nome: "Taxa de Carbono Severa", custoBase: -20, desc: "Multar pesadamente as emissões (Gera Receita).", s: { txt: "As emissões caíram e o Estado faturou.", e: 2, r: 1, m: 60 }, f: { txt: "Colete Amarelos! Revolta massiva nas ruas.", e: -2, r: 6, m: -20 } }
+            ]},
+            { titulo: "A Economia Subterrânea", desc: "Muita economia informal. O Estado perde milhões em impostos não cobrados.", projetos: [
+                { nome: "Amnistia Fiscal (Perdão)", custoBase: -40, desc: "Perdoar fugas antigas se começarem a pagar.", s: { txt: "Muitos legalizaram-se. Receita futura garantida.", e: 0, r: -2, m: 60 }, f: { txt: "O povo honesto achou injusto e parou de pagar.", e: -2, r: 4, m: -30 } },
+                { nome: "Combate Implacável à Fuga", custoBase: 40, desc: "Fiscalização apertada e penalizações de prisão.", s: { txt: "A economia subterrânea reduziu drasticamente.", e: 2, r: 0, m: 80 }, f: { txt: "Pequenos negócios faliram por não aguentar a carga legal.", e: -1, r: 3, m: -20 } },
+                { nome: "Reduzir Impostos Gerais", custoBase: 70, desc: "Tornar atrativo ser legal.", s: { txt: "Com impostos justos, ninguém fugiu. Economia cresceu.", e: 3, r: -3, m: 20 }, f: { txt: "A fuga continuou e o Estado ficou sem receita.", e: 0, r: 1, m: -80 } },
+                { nome: "Digitalizar Pagamentos", custoBase: 30, desc: "Fim do dinheiro em numerário na Nação.", s: { txt: "Impossível fugir aos impostos! Contas certas.", e: 1, r: 1, m: 70 }, f: { txt: "Idosos e infoexcluídos ficaram isolados da economia.", e: -2, r: 3, m: 0 } }
+            ]},
+            { titulo: "A Estrutura do Emprego", desc: "Forte Terciarização. Agricultura abandonada, Serviços dominam.", projetos: [
+                { nome: "Apoiar a Agricultura Moderna", custoBase: 50, desc: "Evitar dependência externa de alimentos.", s: { txt: "Soberania alimentar garantida no Setor Primário.", e: 3, r: -1, m: 20 }, f: { txt: "As secas arruinaram as colheitas.", e: 0, r: 1, m: -30 } },
+                { nome: "Aposta no Turismo Massivo", custoBase: -30, desc: "Focar tudo no Setor Terciário (Gera Receita).", s: { txt: "Milhões de turistas deixaram a sua riqueza.", e: 0, r: 0, m: 80 }, f: { txt: "Gentrificação. Os locais não conseguem pagar rendas.", e: -2, r: 4, m: 0 } },
+                { nome: "Reindustrialização", custoBase: 80, desc: "Trazer fábricas tecnológicas de volta (Setor Secundário).", s: { txt: "A Anatomia da economia ficou mais equilibrada.", e: 3, r: -2, m: 40 }, f: { txt: "Nação não tem operários qualificados suficientes.", e: 0, r: 2, m: -40 } },
+                { nome: "Cortar Salário Mínimo", custoBase: -40, desc: "Para aumentar a atratividade do Setor Terciário fraco.", s: { txt: "O desemprego desceu estatisticamente.", e: -1, r: 1, m: 40 }, f: { txt: "Explosão de 'trabalhadores pobres'. Miséria social.", e: -3, r: 5, m: 0 } }
+            ]},
+            { titulo: "Instituições e Estado de Direito", desc: "A corrupção afasta o investimento. Precisas de instituições fortes.", projetos: [
+                { nome: "Justiça Rápida e Transparente", custoBase: 60, desc: "Investir em tribunais anticorrupção.", s: { txt: "Confiança total dos agentes económicos. IDH sobe.", e: 4, r: -2, m: 30 }, f: { txt: "As reformas esbarraram na burocracia do sistema.", e: 0, r: 1, m: -20 } },
+                { nome: "Ignorar a Corrupção", custoBase: -50, desc: "Manter os esquemas das elites.", s: { txt: "As elites mantiveram o financiamento do teu partido.", e: -2, r: 1, m: 80 }, f: { txt: "O investimento externo fugiu do país.", e: -3, r: 4, m: -60 } },
+                { nome: "Independência do Banco Central", custoBase: 10, desc: "O Governo não interfere na política monetária.", s: { txt: "Previsibilidade económica trouxe estabilidade aos preços.", e: 2, r: -1, m: 20 }, f: { txt: "O Banco Central tomou decisões que prejudicaram o Governo.", e: 0, r: 2, m: -20 } },
+                { nome: "Digitalizar o Estado", custoBase: 40, desc: "Fim das filas nos serviços públicos.", s: { txt: "Cidadãos adoram a eficiência pública.", e: 3, r: -3, m: 10 }, f: { txt: "Ataque de Hackers paralisou o país.", e: -1, r: 3, m: -30 } }
+            ]},
+            { titulo: "Choque Demográfico", desc: "O país está envelhecido e falta mão de obra ativa.", projetos: [
+                { nome: "Aumentar Idade da Reforma", custoBase: -30, desc: "Reduz o peso da Segurança Social.", s: { txt: "Contas públicas ficaram sustentáveis no longo prazo.", e: -1, r: 2, m: 70 }, f: { txt: "A população idosa fez manifestações violentas.", e: -2, r: 5, m: 0 } },
+                { nome: "Incentivo à Natalidade", custoBase: 80, desc: "Cheques-bebé e creches gratuitas.", s: { txt: "Uma nova geração renovou a pirâmide etária.", e: 4, r: -3, m: 0 }, f: { txt: "Custou fortunas e a natalidade não subiu.", e: 0, r: 1, m: -60 } },
+                { nome: "Políticas Migratórias Abertas", custoBase: 20, desc: "Atrair trabalhadores jovens estrangeiros.", s: { txt: "A população ativa cresceu e pagou pensões.", e: 3, r: -1, m: 40 }, f: { txt: "A falta de integração gerou tensões xenófobas.", e: -1, r: 4, m: -10 } },
+                { nome: "Cortar nas Pensões", custoBase: -60, desc: "Austeridade extrema sobre os idosos.", s: { txt: "O Orçamento de Estado ficou com um Superavit gigante.", e: -2, r: 2, m: 100 }, f: { txt: "Miséria na terceira idade destruiu o IDH do país.", e: -4, r: 6, m: 0 } }
+            ]},
+            { titulo: "Bens Públicos vs Privados", desc: "A educação e saúde devem dar lucro?", projetos: [
+                { nome: "Ensino Gratuito Total", custoBase: 100, desc: "Universidade gratuita. Capital humano máximo.", s: { txt: "O país formou uma elite de inovadores globais.", e: 5, r: -4, m: 0 }, f: { txt: "O Estado não conseguiu pagar as escolas.", e: 1, r: 2, m: -80 } },
+                { nome: "Saúde 100% Privada", custoBase: -120, desc: "O Estado poupa na saúde.", s: { txt: "As contas do Governo nunca estiveram tão ricas.", e: -3, r: 3, m: 180 }, f: { txt: "A esperança média de vida caiu a pique. IDH destruído.", e: -5, r: 6, m: 0 } },
+                { nome: "Parcerias Público-Privadas", custoBase: 40, desc: "O Estado paga, o privado gere os Hospitais.", s: { txt: "Eficiência e saúde de qualidade para todos.", e: 3, r: -1, m: 10 }, f: { txt: "Os privados cobraram o triplo do contratado ao Estado.", e: 0, r: 3, m: -60 } },
+                { nome: "Nacionalizar Bancos", custoBase: 90, desc: "O Estado controla o crédito e a economia.", s: { txt: "O crédito barato impulsionou as PMEs locais.", e: 2, r: -2, m: 30 }, f: { txt: "A corrupção política nos bancos faliu a Nação.", e: -2, r: 4, m: -100 } }
+            ]},
+            { titulo: "Crise na Balança Comercial", desc: "A Nação importa demasiado e produz pouco.", projetos: [
+                { nome: "Apoiar a I&D Interna", custoBase: 80, desc: "Criar produtos inovadores (Progresso Técnico).", s: { txt: "O país começou a exportar tecnologia de ponta!", e: 4, r: -1, m: 50 }, f: { txt: "As investigações não deram frutos comerciais.", e: 0, r: 1, m: -50 } },
+                { nome: "Desvalorizar a Moeda", custoBase: 0, desc: "Tornar as exportações baratas para o exterior.", s: { txt: "As fábricas não pararam de exportar (Competitividade).", e: 1, r: 1, m: 40 }, f: { txt: "As importações de petróleo ficaram demasiado caras.", e: -1, r: 3, m: -30 } },
+                { nome: "Proibir Importações de Luxo", custoBase: -20, desc: "Reter riqueza no país.", s: { txt: "O consumo virou-se para os produtos nacionais.", e: 0, r: 0, m: 40 }, f: { txt: "Contrabando e mercado negro explodiram.", e: -1, r: 2, m: -10 } },
+                { nome: "Campanha 'Compre Nacional'", custoBase: 30, desc: "Marketing patriótico.", s: { txt: "As PMEs cresceram com o orgulho nacional.", e: 2, r: -2, m: 20 }, f: { txt: "As pessoas continuaram a preferir o estrangeiro mais barato.", e: 0, r: 1, m: -10 } }
+            ]},
+            { titulo: "A Era das Decisões Finais", desc: "O último esforço para equilibrar Justiça e Eficiência.", projetos: [
+                { nome: "Rendimento Básico Universal", custoBase: 150, desc: "Dinheiro grátis para todos os cidadãos.", s: { txt: "A pobreza extrema foi erradicada! Marco histórico.", e: 6, r: -5, m: -20 }, f: { txt: "Inflação disparou e a Nação foi à bancarrota.", e: 0, r: 4, m: -120 } },
+                { nome: "Abolir Impostos a Empresas", custoBase: -100, desc: "Paraíso fiscal corporativo.", s: { txt: "Choveu investimento estrangeiro no país.", e: -1, r: 1, m: 150 }, f: { txt: "Faltou dinheiro para a Saúde e a população sofreu.", e: -4, r: 5, m: 0 } },
+                { nome: "Plano de Habitação Pública", custoBase: 90, desc: "O Estado constrói casas baratas.", s: { txt: "Os jovens conseguiram finalmente independência.", e: 4, r: -3, m: 0 }, f: { txt: "Obras paradas por suspeitas de corrupção.", e: -1, r: 3, m: -60 } },
+                { nome: "Imposto sobre Grandes Fortunas", custoBase: -40, desc: "Taxar milionários agressivamente.", s: { txt: "O povo sentiu justiça fiscal. Cofres cheios.", e: 2, r: -3, m: 80 }, f: { txt: "Fuga de capitais massiva para o exterior.", e: -1, r: 2, m: -60 } }
+            ]},
+            { titulo: "O Fim da Legislatura", desc: "A economia faz o balanço de 15 anos.", projetos: [
+                { nome: "Mega Festa Nacional", custoBase: 40, desc: "Acalmar as hostes (Política 'Pão e Circo').", s: { txt: "O povo cantou nas ruas o nome do Governo.", e: 1, r: -4, m: 0 }, f: { txt: "A oposição criticou o esbanjamento absurdo.", e: 0, r: 1, m: -20 } },
+                { nome: "Revisão do Estado de Direito", custoBase: 50, desc: "Limpar as últimas falhas na justiça.", s: { txt: "O país subiu ao Top 1 da Transparência Internacional.", e: 4, r: -1, m: 0 }, f: { txt: "Descobriram-se desvios no teu próprio Governo.", e: -2, r: 3, m: -10 } },
+                { nome: "Saque Final aos Cofres", custoBase: -150, desc: "Encher as vossas contas na Suíça (Risco Gigante).", s: { txt: "Ninguém reparou. Fugiste milionário.", e: -5, r: 1, m: 150 }, f: { txt: "FMI descobriu tudo. A Nação entrou em colapso.", e: -10, r: 10, m: -300 } },
+                { nome: "Reforçar Direitos Humanos", custoBase: 30, desc: "Centrar a economia no Artigo 1 da ONU.", s: { txt: "O IDH atingiu o seu pico histórico.", e: 4, r: -2, m: 0 }, f: { txt: "Belas palavras, mas sem impacto prático visível.", e: 1, r: 0, m: 0 } }
+            ]}
+        ];
+
+        function iniciarJogo() {
+            let numInput = document.getElementById('num-players').value;
+            let num = parseInt(numInput, 10);
+            
+            if (isNaN(num) || num < 2) num = 2; 
+            if (num > 20) num = 20;
+            
+            players = [];
+            for(let i = 0; i < num; i++) {
+                let cor = colors[i % colors.length];
+                
+                players.push({ 
+                    id: i, 
+                    name: `Nação ${i+1}`, 
+                    color: cor, 
+                    moedas: 500, // PIB
+                    estrelas: 0, // IDH
+                    revolta: 0,  // Tensão Social
+                    eliminado: false,
+                    motivo: ""
+                });
+            }
+
+            document.getElementById('setup-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'flex';
+            
+            renderDashboard();
+        }
+
+        function renderDashboard() {
+            let data = timeline[currentYear - 1];
+            document.getElementById('year-title').innerText = `Ano ${currentYear} de 15: ${data.titulo}`;
+            document.getElementById('year-desc').innerText = data.desc;
+            
+            let projHtml = '';
+            data.projetos.forEach((p, idx) => {
+                let costClass = p.custoBase <= 0 ? 'income' : '';
+                let costText = p.custoBase <= 0 ? `+${Math.abs(p.custoBase)}💰 (Receita)` : `-${p.custoBase}💰`;
+                projHtml += `
+                    <div class="project-card">
+                        <span class="dice-icon">🎲</span>
+                        <b>${p.nome}</b><br>
+                        <span class="project-cost ${costClass}">Custo Base: ${costText}</span><br>
+                        <small>${p.desc}</small>
+                    </div>
+                `;
+            });
+            document.getElementById('projects-ui').innerHTML = projHtml;
+
+            let sortedPlayers = [...players].sort((a,b) => {
+                if(a.eliminado && !b.eliminado) return 1;
+                if(!a.eliminado && b.eliminado) return -1;
+                if (b.estrelas !== a.estrelas) return b.estrelas - a.estrelas;
+                return b.moedas - a.moedas;
+            });
+
+            let dashHtml = '';
+            sortedPlayers.forEach(p => {
+                let statusClass = p.eliminado ? 'eliminated' : '';
+                let checkboxes = '';
+                
+                if (!p.eliminado) {
+                    data.projetos.forEach((proj, idx) => {
+                        checkboxes += `
+                            <div class="checkbox-row" onclick="document.getElementById('cb-${p.id}-${idx}').click()">
+                                <input type="checkbox" id="cb-${p.id}-${idx}" value="${idx}" onclick="event.stopPropagation()">
+                                <label>${proj.nome}</label>
+                            </div>
+                        `;
+                    });
+                }
+
+                // IDH Bar, Tensão Bar
+                let starPct = Math.min(100, Math.max(0, (p.estrelas / 40) * 100));
+                let revPct = Math.min(100, Math.max(0, (p.revolta / 10) * 100));
+                let colorMoedas = p.moedas < 100 ? '#e74c3c' : '#2ecc71';
+
+                dashHtml += `
+                    <div class="player-card ${statusClass}" style="border-color: ${p.color}">
+                        <div class="eliminated-stamp">${p.motivo}</div>
+                        <h2 style="color:${p.color}; margin:0 0 10px 0;">${p.name}</h2>
+                        
+                        <div class="stat-row">
+                            <span>PIB / Orçamento:</span>
+                            <span style="color:${colorMoedas}">${p.moedas}💰</span>
+                        </div>
+                        
+                        <div class="stat-row" style="margin-bottom:0;">
+                            <span>IDH / Bem-Estar (${p.estrelas}⭐)</span>
+                        </div>
+                        <div class="bar-bg"><div class="bar-fill bar-stars" style="width: ${starPct}%;"></div></div>
+                        
+                        <div class="stat-row" style="margin-bottom:0; margin-top:10px;">
+                            <span>Tensão Social / Inflação (${p.revolta}/10 😡)</span>
+                        </div>
+                        <div class="bar-bg"><div class="bar-fill bar-revolt" style="width: ${revPct}%;"></div></div>
+                        
+                        <div class="checkbox-group">
+                            ${p.eliminado ? '<i>Governo Queda / FMI Interveio</i>' : '<b>Aprovar no Parlamento:</b><br>' + checkboxes}
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('dashboard-ui').innerHTML = dashHtml;
+        }
+
+        function processarAno() {
+            let data = timeline[currentYear - 1];
+            let report = "";
+
+            players.forEach(p => {
+                if(p.eliminado) return;
+
+                let relatorioCusto = 0;
+                let relatorioEstrelas = 0;
+                let relatorioRevolta = 0;
+                let logProjetos = [];
+
+                // 1. Processar os Projetos Selecionados (ROLETA RUSSA!)
+                data.projetos.forEach((proj, idx) => {
+                    let cb = document.getElementById(`cb-${p.id}-${idx}`);
+                    if (cb && cb.checked) {
+                        p.moedas -= proj.custoBase;
+                        relatorioCusto += proj.custoBase;
+
+                        // Rola os Dados (70% Sucesso, 30% Falha)
+                        let isSuccess = Math.random() < 0.7;
+                        let outcome = isSuccess ? proj.s : proj.f;
+
+                        p.estrelas += outcome.e;
+                        p.revolta += outcome.r;
+                        p.moedas += outcome.m; // Variações extras de caixa
+
+                        relatorioEstrelas += outcome.e;
+                        relatorioRevolta += outcome.r;
+
+                        let classStyle = isSuccess ? 'success' : 'fail';
+                        let icon = isSuccess ? '✅' : '❌';
+                        logProjetos.push(`<div class="report-project ${classStyle}">
+                            <b>${icon} ${proj.nome}:</b> ${outcome.txt}<br>
+                            <small>Impacto Real: ${outcome.e > 0 ? '+'+outcome.e : outcome.e}⭐ | ${outcome.r > 0 ? '+'+outcome.r : outcome.r}😡 | ${outcome.m > 0 ? '+'+outcome.m : outcome.m}💰</small>
+                        </div>`);
+                    }
+                });
+
+                // 2. O Evento Inesperado Global!
+                let imprevisto = imprevistosGlobais[Math.floor(Math.random() * imprevistosGlobais.length)];
+                p.moedas += imprevisto.m;
+                p.estrelas += imprevisto.e;
+                p.revolta += imprevisto.r;
+                
+                relatorioEstrelas += imprevisto.e;
+                relatorioRevolta += imprevisto.r;
+
+                // Crescimento natural (Impostos da Economia Base)
+                p.moedas += 40;
+
+                if(p.revolta < 0) p.revolta = 0;
+
+                report += `<div class="report-section" style="border-color:${p.color};">
+                    <h2 style="margin:0 0 10px 0; color:${p.color}">${p.name}</h2>
+                    ${logProjetos.length > 0 ? logProjetos.join('') : '<i>Governo Paralisado (Zero Reformas aprovadas).</i><br>'}
+                    <div class="report-event">Imprevisto Macroeconómico: "${imprevisto.txt}" (${imprevisto.m}💰 | ${imprevisto.e}⭐ | ${imprevisto.r}😡)</div>
+                    <hr style="border:0; border-top:1px solid #bdc3c7; margin:10px 0;">
+                    <b>Balanço do Ano:</b> ${relatorioEstrelas > 0 ? '+'+relatorioEstrelas : relatorioEstrelas}⭐ | ${relatorioRevolta > 0 ? '+'+relatorioRevolta : relatorioRevolta}😡 | PIB Atual: ${p.moedas}💰
+                `;
+
+                if (p.moedas < 0) {
+                    p.eliminado = true;
+                    p.motivo = "BANCARROTA";
+                    report += `<div class="fatal">A ${p.name} faliu! O FMI interveio e dissolveu o Governo!</div>`;
+                } else if (p.revolta > 10) {
+                    p.eliminado = true;
+                    p.motivo = "REVOLUÇÃO";
+                    report += `<div class="fatal">A Tensão Social na ${p.name} atingiu o limite. O Governo Caiu!</div>`;
+                }
+
+                report += `</div>`;
+            });
+
+            document.getElementById('modal-text').innerHTML = report;
+            
+            if (currentYear === maxYears || players.filter(p => !p.eliminado).length === 0) {
+                document.getElementById('modal-btn').innerText = "Ver Vencedor Final!";
+                document.getElementById('modal-btn').onclick = mostrarVencedor;
+            } else {
+                document.getElementById('modal-btn').innerText = "Avançar para o Ano " + (currentYear + 1);
+                document.getElementById('modal-btn').onclick = avancarAno;
+            }
+            
+            document.getElementById('modal-btn').style.display = "inline-block";
+            document.getElementById('modal-overlay').style.display = "flex";
+        }
+
+        function avancarAno() {
+            document.getElementById('modal-overlay').style.display = "none";
+            currentYear++;
+            renderDashboard();
+        }
+
+        function mostrarVencedor() {
+            let ativos = players.filter(p => !p.eliminado);
+            let texto = "<h2>O Mandato de 15 Anos Terminou!</h2>";
+
+            if (ativos.length === 0) {
+                texto += "<h1 style='color:#e74c3c; font-size:40px;'>COLAPSO GLOBAL!</h1><p>Nenhuma Nação sobreviveu. O mundo colapsou numa anarquia financeira e civil.</p>";
+            } else {
+                ativos.sort((a,b) => {
+                    if (b.estrelas !== a.estrelas) return b.estrelas - a.estrelas;
+                    return b.moedas - a.moedas;
+                });
+
+                let vencedor = ativos[0];
+                texto += `A Nação com maior Desenvolvimento Humano (IDH) e Contas Sustentáveis é:<br><br>
+                <h1 style="color:${vencedor.color}; font-size:50px; margin:15px 0; text-transform:uppercase;">${vencedor.name}</h1>
+                <h3 style="margin-bottom:0;">${vencedor.estrelas} Estrelas (IDH) ⭐</h3>
+                <h3 style="margin-top:5px; color:#f1c40f;">${vencedor.moedas} PIB 💰</h3>
+                <p><i>Sobreviveram às Flutuações da Atividade Económica e promoveram o Bem-Estar!</i></p>`;
+            }
+
+            document.getElementById('modal-title').innerText = "🏆 O GRANDE VENCEDOR 🏆";
+            document.getElementById('modal-text').innerHTML = texto;
+            document.getElementById('modal-btn').style.display = "none";
+            renderDashboard(); 
+        }
+    </script>
+</body>
+</html>

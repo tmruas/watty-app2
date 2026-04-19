@@ -23,6 +23,8 @@ from watty.ui.layout import (
 )
 from watty.ui.styles import inject_global_styles
 from watty.views.chat import render_chat_tab
+from watty.views.jogos import get_active_game_filename, render_jogos_library, render_jogos_player
+from watty.views.watty_tv import render_watty_tv
 from watty.views.perfil import render_perfil_view
 from watty.views.quem_somos import render_quem_somos_view
 from watty.views.quiz import render_quiz_tab
@@ -33,7 +35,7 @@ st.set_page_config(
     page_title="Watty | O teu Tutor Inteligente",
     page_icon="⚡",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
 
 init_gemini_from_secrets()
@@ -75,11 +77,24 @@ if route == "termos":
 render_hud_metrics()
 
 client = get_gemini_client()
-ano_escolhido, disciplina_escolhida, aba_escolhida, exemplo_atual = render_sidebar()
+ano_escolhido, disciplina_escolhida, main_section, exemplo_atual = render_sidebar()
 
-if aba_escolhida == "💬 Chat Socrático":
+_active_game = get_active_game_filename()
+if _active_game:
+    render_jogos_player(_active_game)
+    st.stop()
+
+if main_section == "jogos":
+    render_jogos_library()
+    st.stop()
+
+if main_section == "watty_tv":
+    render_watty_tv()
+    st.stop()
+
+if main_section == "chat":
     render_chat_tab(client, ano_escolhido, disciplina_escolhida)
-elif aba_escolhida == "🏋️ Treinar (Quizzes)":
+elif main_section == "quiz":
     render_quiz_tab(client, ano_escolhido, disciplina_escolhida, exemplo_atual)
-elif aba_escolhida == "📚 Aprender (Resumos)":
+elif main_section == "resumos":
     render_resumos_tab(client, ano_escolhido, disciplina_escolhida, exemplo_atual)

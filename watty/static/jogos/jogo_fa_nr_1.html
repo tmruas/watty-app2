@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WATTY - Fã Nº 1</title>
+    <style>
+        :root {
+            --bg-dark: #0D0814;
+            --app-dark: #1A1025;
+            --post-bg: #26183A;
+            --purple-main: #9B5DE5;
+            --purple-neon: #B57EDC;
+            --magenta: #F15BB5;
+            --white: #FFFFFF;
+            --text-light: #E0D7F0;
+            --success: #00E676;
+            --warning: #FFD166;
+            --error: #FF3366;
+        }
+
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: manipulation; }
+
+        body {
+            background-color: var(--bg-dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 10px;
+            color: var(--white);
+            overflow: hidden;
+        }
+
+        .app-container {
+            background: var(--app-dark);
+            width: 100%;
+            max-width: 450px;
+            height: 95vh;
+            max-height: 850px;
+            border-radius: 30px;
+            padding: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 0 0 2px rgba(155, 93, 229, 0.3);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Top Bar */
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .level-badge { background: var(--purple-main); color: white; padding: 5px 15px; border-radius: 15px; font-weight: bold; font-size: 13px; text-transform: uppercase; box-shadow: 0 0 10px rgba(155, 93, 229, 0.5); }
+        .xp-container { flex-grow: 1; margin: 0 15px; height: 10px; background: rgba(255,255,255,0.1); border-radius: 5px; overflow: hidden; }
+        .xp-bar { height: 100%; background: linear-gradient(90deg, var(--magenta), var(--purple-main)); width: 0%; transition: width 0.5s ease; }
+
+        /* Watty Box */
+        .watty-box { display: flex; align-items: center; gap: 15px; background: rgba(155, 93, 229, 0.1); padding: 12px 15px; border-radius: 20px; margin-bottom: 15px; border: 1px solid var(--purple-main); transition: all 0.3s ease; }
+        .watty-box.error-state { border-color: var(--error); background: rgba(255, 51, 102, 0.1); }
+        .watty-box.success-state { border-color: var(--success); background: rgba(0, 230, 118, 0.1); }
+        .watty-avatar { width: 45px; height: 45px; background: var(--purple-main); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 22px; flex-shrink: 0; box-shadow: 0 0 15px rgba(155, 93, 229, 0.6); }
+        .watty-speech { font-size: 13px; font-weight: 600; line-height: 1.3; color: var(--text-light); }
+
+        /* Views globais */
+        .view { display: none; flex-direction: column; flex-grow: 1; animation: fadeIn 0.4s ease; }
+        .view.active { display: flex; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* V1: Ecrã de Seleção */
+        .selection-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; overflow-y: auto; padding-bottom: 10px;}
+        .character-card { background: var(--post-bg); border-radius: 15px; padding: 15px; text-align: center; border: 2px solid transparent; cursor: pointer; transition: all 0.2s ease; position: relative; overflow: hidden; }
+        .character-card:hover { border-color: var(--magenta); transform: translateY(-3px); box-shadow: 0 10px 20px rgba(241, 91, 181, 0.2); }
+        .character-card.locked { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; }
+        .character-card.locked::after { content: "🔒 EM BREVE"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); padding: 5px 10px; border-radius: 10px; font-size: 11px; font-weight: bold; width: 80%; }
+        
+        .char-avatar { width: 70px; height: 70px; border-radius: 50%; margin: 0 auto 10px; background: linear-gradient(45deg, var(--purple-main), var(--magenta)); display: flex; justify-content: center; align-items: center; font-size: 35px; border: 2px solid var(--white); box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .char-name { font-weight: 900; font-size: 14px; margin-bottom: 5px; }
+        .char-subject { font-size: 11px; color: var(--purple-neon); font-weight: bold; text-transform: uppercase; }
+
+        /* V2: O Jogo (Trivia) */
+        .game-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .score-display { font-size: 20px; font-weight: 900; color: var(--warning); text-shadow: 0 0 10px rgba(255, 209, 102, 0.4); }
+        
+        .combo-box { background: rgba(241, 91, 181, 0.2); border: 1px solid var(--magenta); padding: 5px 12px; border-radius: 10px; font-weight: 900; color: var(--magenta); font-size: 14px; transition: transform 0.2s; }
+        .combo-box.pulse { transform: scale(1.2); color: var(--white); background: var(--magenta); box-shadow: 0 0 15px var(--magenta); }
+
+        .timer-container { width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; margin-bottom: 20px; overflow: hidden; }
+        .timer-bar { height: 100%; width: 100%; background: var(--success); transition: width 0.1s linear, background-color 0.3s ease; }
+
+        .question-box { background: var(--post-bg); padding: 20px; border-radius: 20px; font-size: 17px; font-weight: 600; line-height: 1.4; text-align: center; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+
+        .options-grid { display: flex; flex-direction: column; gap: 10px; }
+        .option-btn { background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.1); color: var(--white); padding: 15px; border-radius: 15px; font-size: 14px; font-weight: 600; text-align: left; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; }
+        .option-btn:hover { background: rgba(155, 93, 229, 0.2); border-color: var(--purple-main); }
+        .option-btn:active { transform: scale(0.98); }
+        
+        .option-btn.correct { background: rgba(0, 230, 118, 0.2); border-color: var(--success); color: var(--success); }
+        .option-btn.wrong { background: rgba(255, 51, 102, 0.2); border-color: var(--error); color: var(--error); }
+
+        /* V3: Share Card (Ecrã Final) */
+        .share-card { background: linear-gradient(135deg, #2A1B40 0%, #1A1025 100%); border-radius: 25px; padding: 25px; text-align: center; border: 2px solid var(--purple-main); box-shadow: 0 20px 40px rgba(155, 93, 229, 0.3); margin-top: 10px; position: relative; overflow: hidden; }
+        .share-card::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(241, 91, 181, 0.1) 0%, transparent 60%); pointer-events: none; animation: rotateBg 10s linear infinite; }
+        @keyframes rotateBg { 100% { transform: rotate(360deg); } }
+
+        .rank-percent { font-size: 50px; font-weight: 900; color: var(--white); text-shadow: 0 0 20px var(--magenta); margin: 10px 0; line-height: 1; }
+        .rank-title { font-size: 22px; color: var(--warning); font-weight: 900; text-transform: uppercase; margin-bottom: 10px; }
+        .rank-desc { font-size: 14px; color: var(--text-light); margin-bottom: 20px; }
+
+        .btn-primary { width: 100%; padding: 15px; border: none; border-radius: 20px; background: linear-gradient(45deg, var(--purple-main), var(--magenta)); color: white; font-size: 15px; font-weight: bold; cursor: pointer; box-shadow: 0 10px 20px rgba(155, 93, 229, 0.3); transition: transform 0.2s; margin-top: 10px; z-index: 20; }
+        .btn-primary:active { transform: scale(0.97); }
+        
+        .btn-share { background: #000; border: 2px solid var(--purple-neon); display: flex; align-items: center; justify-content: center; gap: 10px; }
+
+        .shake { animation: shake 0.4s; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 50% { transform: translateX(8px); } 75% { transform: translateX(-8px); } }
+    </style>
+</head>
+<body>
+
+<div class="app-container" id="gameWindow">
+    
+    <div class="top-bar">
+        <div class="level-badge">HISTÓRIA A</div>
+        <div class="xp-container"><div class="xp-bar" id="ui-xp-bar"></div></div>
+        <div style="font-weight: bold; font-size: 12px; color: var(--purple-neon);">FÃ Nº 1</div>
+    </div>
+
+    <div id="view-selection" class="view active">
+        <div class="watty-box">
+            <div class="watty-avatar">🏆</div>
+            <div class="watty-speech">Bem-vindo ao Fã Nº 1! Escolhe uma personalidade e prova que dominas a sua história.</div>
+        </div>
+
+        <h3 style="text-align: center; color: var(--white); margin: 10px 0;">Escolhe o teu Alvo:</h3>
+        
+        <div class="selection-grid">
+            <div class="character-card" onclick="startGame('afonso')">
+                <div class="char-avatar" style="background: linear-gradient(45deg, #B22222, #FF4500);">⚔️</div>
+                <div class="char-name">D. Afonso Henriques</div>
+                <div class="char-subject">História A</div>
+            </div>
+            
+            <div class="character-card locked">
+                <div class="char-avatar" style="background: linear-gradient(45deg, #4682B4, #00CED1);">🖋️</div>
+                <div class="char-name">Fernando Pessoa</div>
+                <div class="char-subject">Português</div>
+            </div>
+            <div class="character-card locked">
+                <div class="char-avatar" style="background: linear-gradient(45deg, #32CD32, #00FA9A);">🔬</div>
+                <div class="char-name">Marie Curie</div>
+                <div class="char-subject">Física / Química</div>
+            </div>
+            <div class="character-card locked">
+                <div class="char-avatar" style="background: linear-gradient(45deg, #DAA520, #FFD700);">🏛️</div>
+                <div class="char-name">Aristóteles</div>
+                <div class="char-subject">Filosofia</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="view-game" class="view">
+        <div class="watty-box" id="game-watty-box">
+            <div class="watty-avatar" id="game-char-avatar">⚔️</div>
+            <div class="watty-speech" id="game-watty-text">Achas que conheces o Conquistador? Prova-o. O tempo está a contar!</div>
+        </div>
+
+        <div class="game-header">
+            <div class="score-display" id="score-display">0 PTS</div>
+            <div class="combo-box" id="combo-display">1x COMBO</div>
+        </div>
+
+        <div class="timer-container">
+            <div class="timer-bar" id="timer-bar"></div>
+        </div>
+
+        <div class="question-box" id="question-text">A carregar pergunta...</div>
+
+        <div class="options-grid" id="options-grid">
+            </div>
+    </div>
+
+    <div id="view-end" class="view">
+        <h2 style="text-align: center; margin-bottom: 5px; color: var(--success);">ANÁLISE CONCLUÍDA!</h2>
+        <p style="text-align: center; color: #888; font-size: 12px; margin-top: 0;">Calculando posição na base de dados global...</p>
+
+        <div class="share-card">
+            <div class="char-avatar" style="margin: 0 auto; width: 90px; height: 90px; font-size: 40px; background: linear-gradient(45deg, #B22222, #FF4500);">⚔️</div>
+            
+            <div style="font-size: 14px; font-weight: bold; color: var(--purple-neon); margin-top: 15px;">És melhor que</div>
+            <div class="rank-percent" id="final-percent">90%</div>
+            <div style="font-size: 14px; font-weight: bold; color: var(--purple-neon); margin-bottom: 15px;">dos jogadores!</div>
+
+            <div class="rank-title" id="final-title">Mestre Templário</div>
+            <div class="rank-desc" id="final-desc">Estás no Top 10% de fãs de D. Afonso Henriques! Até o Papa te respeita.</div>
+            
+            <div style="font-weight: 900; font-size: 18px; color: var(--warning); border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+                SCORE: <span id="final-score-val">0</span>
+            </div>
+        </div>
+
+        <button class="btn-primary btn-share" onclick="fakeShare()">📸 PARTILHAR NO TIKTOK/IG</button>
+        <button class="btn-primary" style="background: transparent; border: 2px solid var(--purple-main);" onclick="location.reload()">JOGAR NOVAMENTE 🔄</button>
+    </div>
+
+</div>
+
+<script>
+    // ---------------------------------------------------------
+    // BASE DE DADOS (Trivia do D. Afonso Henriques)
+    // ---------------------------------------------------------
+    const characterDB = {
+        'afonso': {
+            name: "D. Afonso Henriques",
+            avatar: "⚔️",
+            color: "linear-gradient(45deg, #B22222, #FF4500)",
+            questions: [
+                {
+                    q: "Em 1128, D. Afonso Henriques defrontou as tropas da sua mãe. Que batalha foi esta?",
+                    options: ["Batalha de S. Mamede", "Batalha de Ourique", "Batalha de Aljubarrota", "Batalha do Salado"],
+                    correct: 0,
+                    feedbackInfo: "A Batalha de S. Mamede marca o início da governação independente de D. Afonso Henriques."
+                },
+                {
+                    q: "Qual foi o documento papal que reconheceu formalmente a independência de Portugal em 1179?",
+                    options: ["Tratado de Zamora", "Bula Inter Caetera", "Bula Manifestis Probatum", "Tratado de Tordesilhas"],
+                    correct: 2,
+                    feedbackInfo: "A Bula Manifestis Probatum foi emitida pelo Papa Alexandre III, oficializando o reino."
+                },
+                {
+                    q: "D. Afonso Henriques conquistou Lisboa aos mouros (1147) com a ajuda fundamental de quem?",
+                    options: ["Apenas os Templários", "Exército Castelhano", "Mercenários Franceses", "Cruzados a caminho da Terra Santa"],
+                    correct: 3,
+                    feedbackInfo: "Uma frota de cruzados (ingleses, germânicos e flamengos) ajudou no cerco a Lisboa."
+                },
+                {
+                    q: "Com que monarca assinou D. Afonso Henriques o Tratado de Zamora em 1143?",
+                    options: ["Afonso VII de Leão e Castela", "Filipe II de Espanha", "Pedro I de Aragão", "Carlos V de Habsburgo"],
+                    correct: 0,
+                    feedbackInfo: "Afonso VII, seu primo, concedeu-lhe o título de rei, embora sob vassalagem inicial."
+                },
+                {
+                    q: "Quem era a mãe de D. Afonso Henriques, contra quem ele se revoltou?",
+                    options: ["D. Mafalda de Saboia", "D. Filipa de Lencastre", "D. Teresa de Leão", "D. Urraca de Castela"],
+                    correct: 2,
+                    feedbackInfo: "D. Teresa governava o Condado Portucalense, mas a sua aliança com nobres galegos gerou revolta."
+                }
+            ]
+        }
+    };
+
+    // Variáveis de Estado do Jogo
+    let currentData = [];
+    let currentQIndex = 0;
+    let score = 0;
+    let combo = 1;
+    let timeLimit = 12000; // 12 segundos por pergunta (em ms)
+    let timeLeft = timeLimit;
+    let timerInterval;
+    let isAnswering = false;
+
+    // Elementos UI
+    const viewSelection = document.getElementById('view-selection');
+    const viewGame = document.getElementById('view-game');
+    const viewEnd = document.getElementById('view-end');
+    
+    const uiScore = document.getElementById('score-display');
+    const uiCombo = document.getElementById('combo-display');
+    const timerBar = document.getElementById('timer-bar');
+    const questionText = document.getElementById('question-text');
+    const optionsGrid = document.getElementById('options-grid');
+    const wattyBox = document.getElementById('game-watty-box');
+    const wattyText = document.getElementById('game-watty-text');
+    const xpBar = document.getElementById('ui-xp-bar');
+
+    // ---------------------------------------------------------
+    // LÓGICA PRINCIPAL
+    // ---------------------------------------------------------
+
+    function startGame(charId) {
+        const char = characterDB[charId];
+        // Baralhar as perguntas
+        currentData = [...char.questions].sort(() => Math.random() - 0.5);
+        
+        currentQIndex = 0;
+        score = 0;
+        combo = 1;
+        updateScoreUI();
+
+        // Mudar Views
+        viewSelection.classList.remove('active');
+        viewGame.classList.add('active');
+
+        loadQuestion();
+    }
+
+    function loadQuestion() {
+        if (currentQIndex >= currentData.length) {
+            endGame(); return;
+        }
+
+        isAnswering = false;
+        const qData = currentData[currentQIndex];
+
+        // Atualizar Progresso
+        xpBar.style.width = `${(currentQIndex / currentData.length) * 100}%`;
+        
+        // Resetar UI
+        wattyBox.className = 'watty-box';
+        wattyText.innerText = "Lê com atenção e responde rápido para ganhares mais pontos!";
+        questionText.innerText = qData.q;
+        optionsGrid.innerHTML = '';
+
+        // Gerar Botões de Resposta (Baralhados visualmente)
+        let optionsWithIndexes = qData.options.map((opt, i) => ({text: opt, originalIndex: i}));
+        optionsWithIndexes.sort(() => Math.random() - 0.5);
+
+        optionsWithIndexes.forEach(optObj => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = optObj.text;
+            btn.onclick = () => handleAnswer(btn, optObj.originalIndex, qData.correct, qData.feedbackInfo);
+            optionsGrid.appendChild(btn);
+        });
+
+        startTimer();
+    }
+
+    function startTimer() {
+        timeLeft = timeLimit;
+        timerBar.style.width = "100%";
+        timerBar.style.backgroundColor = "var(--success)";
+        
+        clearInterval(timerInterval);
+        
+        timerInterval = setInterval(() => {
+            if (isAnswering) return; // Pausa se já respondeu
+
+            timeLeft -= 50; // Update rápido para barra fluida
+            const percentage = (timeLeft / timeLimit) * 100;
+            timerBar.style.width = percentage + "%";
+
+            if (percentage < 50 && percentage > 20) timerBar.style.backgroundColor = "var(--warning)";
+            if (percentage <= 20) timerBar.style.backgroundColor = "var(--error)";
+
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                timeOutAnswer();
+            }
+        }, 50);
+    }
+
+    function handleAnswer(btnElement, selectedIndex, correctIndex, feedback) {
+        if (isAnswering) return;
+        isAnswering = true;
+        clearInterval(timerInterval);
+
+        const allBtns = document.querySelectorAll('.option-btn');
+        
+        // Identificar se acertou
+        if (selectedIndex === correctIndex) {
+            // SUCESSO
+            btnElement.classList.add('correct');
+            wattyBox.className = 'watty-box success-state';
+            wattyText.innerHTML = `<strong>Certo!</strong> ${feedback}`;
+            
+            // Cálculo de Pontos (Base 100 + Bónus de Tempo) * Combo
+            const timeBonus = Math.floor((timeLeft / timeLimit) * 100);
+            const pointsEarned = (100 + timeBonus) * combo;
+            score += pointsEarned;
+            
+            // Subir Combo
+            combo = Math.min(combo + 1, 5); // Max combo 5x
+            triggerComboAnim();
+
+            if(navigator.vibrate) navigator.vibrate(100);
+
+        } else {
+            // ERRO
+            btnElement.classList.add('wrong');
+            // Mostrar a certa
+            allBtns.forEach(b => {
+                if (b.innerText === currentData[currentQIndex].options[correctIndex]) b.classList.add('correct');
+            });
+
+            wattyBox.className = 'watty-box error-state';
+            wattyText.innerHTML = `<strong>Ups!</strong> ${feedback}`;
+            
+            // Perder Combo
+            combo = 1;
+            document.getElementById('gameWindow').classList.add('shake');
+            setTimeout(() => document.getElementById('gameWindow').classList.remove('shake'), 400);
+
+            if(navigator.vibrate) navigator.vibrate([100, 50, 100]);
+        }
+
+        updateScoreUI();
+        
+        // Passar à próxima
+        setTimeout(() => {
+            currentQIndex++;
+            loadQuestion();
+        }, 3000);
+    }
+
+    function timeOutAnswer() {
+        isAnswering = true;
+        combo = 1;
+        updateScoreUI();
+
+        const correctIndex = currentData[currentQIndex].correct;
+        const allBtns = document.querySelectorAll('.option-btn');
+        
+        allBtns.forEach(b => {
+            if (b.innerText === currentData[currentQIndex].options[correctIndex]) b.classList.add('correct');
+            else b.style.opacity = '0.5';
+        });
+
+        wattyBox.className = 'watty-box error-state';
+        wattyText.innerText = "Tempo Esgotado! Tens de ser mais rápido.";
+        
+        document.getElementById('gameWindow').classList.add('shake');
+        setTimeout(() => document.getElementById('gameWindow').classList.remove('shake'), 400);
+        if(navigator.vibrate) navigator.vibrate([100, 50, 100]);
+
+        setTimeout(() => {
+            currentQIndex++;
+            loadQuestion();
+        }, 3000);
+    }
+
+    function updateScoreUI() {
+        uiScore.innerText = `${score} PTS`;
+        uiCombo.innerText = `${combo}x COMBO`;
+        if (combo > 1) {
+            uiCombo.style.color = "var(--magenta)";
+            uiCombo.style.borderColor = "var(--magenta)";
+        } else {
+            uiCombo.style.color = "var(--text-light)";
+            uiCombo.style.borderColor = "rgba(255,255,255,0.2)";
+            uiCombo.style.background = "transparent";
+            uiCombo.style.boxShadow = "none";
+        }
+    }
+
+    function triggerComboAnim() {
+        uiCombo.classList.remove('pulse');
+        void uiCombo.offsetWidth; // force reflow
+        if(combo > 1) uiCombo.classList.add('pulse');
+    }
+
+    // ---------------------------------------------------------
+    // FINAL DE JOGO (Algoritmo de Percentil)
+    // ---------------------------------------------------------
+    function endGame() {
+        viewGame.classList.remove('active');
+        viewEnd.classList.add('active');
+        xpBar.style.width = "100%";
+
+        const maxPossibleScore = currentData.length * 200 * 3; // Estimativa do score máximo teórico
+        const performance = score / maxPossibleScore;
+
+        let percentil, title, desc;
+
+        // O Algoritmo de "Fã Nº 1"
+        if (score >= 3500) {
+            // Desempenho brilhante
+            percentil = Math.floor(Math.random() * 5) + 1; // Top 1% a 5%
+            title = "Mestre Templário 👑";
+            desc = `Estás no Top ${percentil}% de fãs de D. Afonso Henriques! Até o Papa te respeita.`;
+        } else if (score >= 1500) {
+            // Desempenho Mediano
+            percentil = Math.floor(Math.random() * 30) + 11; // Top 11% a 40%
+            title = "Escudeiro Fiel 🛡️";
+            desc = `Estás no Top ${percentil}% global. Estás no bom caminho para a Reconquista!`;
+        } else {
+            // Desempenho Fraco
+            percentil = Math.floor(Math.random() * 30) + 60; // Top 60% a 90%
+            title = "Camponês Distraído 🌾";
+            desc = `Ficaste no Top ${percentil}%. Precisas de ler os livros antes de ires para o campo de batalha!`;
+        }
+
+        document.getElementById('final-percent').innerText = `${100 - percentil}%`; // Formatação visual: "Melhor que X%"
+        document.getElementById('final-title').innerText = title;
+        document.getElementById('final-desc').innerText = desc;
+        document.getElementById('final-score-val').innerText = score;
+    }
+
+    function fakeShare() {
+        wattyBox.className = 'watty-box success-state';
+        // Apenas simula um share visualmente
+        const btn = document.querySelector('.btn-share');
+        btn.innerText = "Copiado para a Área de Transferência! ✨";
+        btn.style.background = "var(--success)";
+        setTimeout(() => {
+            btn.innerText = "📸 PARTILHAR NO TIKTOK/IG";
+            btn.style.background = "#000";
+        }, 3000);
+    }
+
+</script>
+
+</body>
+</html>
