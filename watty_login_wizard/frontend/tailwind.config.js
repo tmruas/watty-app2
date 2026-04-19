@@ -3,6 +3,27 @@ export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
+      fontFamily: {
+        /** Substituto oficial Duolingo quando não há Feather / DIN (Nunito). */
+        sans: [
+          "Nunito",
+          "ui-sans-serif",
+          "system-ui",
+          "Segoe UI",
+          "Roboto",
+          "Helvetica Neue",
+          "Arial",
+          "sans-serif",
+        ],
+      },
+      letterSpacing: {
+        /** ~tracking -20 do Feather Bold (Duolingo Brand Guidelines). */
+        feather: "-0.02em",
+      },
+      lineHeight: {
+        /** Corpo ~140% DIN Next Rounded (guidelines Duolingo). */
+        duobody: "1.4",
+      },
       screens: {
         /** Telemóveis estreitos (acima do default `sm`) */
         xs: "380px",
@@ -29,6 +50,20 @@ export default {
         /** Hero: chão mínimo + limite com svh (mobile / iframe) */
         "screen-safe":
           "max(18rem, min(32rem, 85svh))",
+      },
+      keyframes: {
+        "watty-float": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-5px)" },
+        },
+        "watty-bolt": {
+          "0%, 100%": { transform: "scale(1)" },
+          "50%": { transform: "scale(1.06)" },
+        },
+      },
+      animation: {
+        "watty-float": "watty-float 2.8s ease-in-out infinite",
+        "watty-bolt": "watty-bolt 2.2s ease-in-out infinite",
       },
     },
   },

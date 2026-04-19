@@ -19,6 +19,19 @@ watty_login_wizard = components.declare_component(
 )
 
 
-def render_login_wizard(*, key: str | None = None) -> dict | list | str | int | float | bool | None:
+def render_login_wizard(
+    *,
+    supabase_url: str,
+    supabase_anon_key: str,
+    supabase_email_redirect_url: str | None = None,
+    key: str | None = None,
+) -> dict | list | str | int | float | bool | None:
     """Renderiza o wizard; devolve o valor enviado pelo React ou None."""
-    return watty_login_wizard(key=key)
+    kwargs: dict = {
+        "supabase_url": supabase_url,
+        "supabase_anon_key": supabase_anon_key,
+        "key": key,
+    }
+    if supabase_email_redirect_url and str(supabase_email_redirect_url).strip():
+        kwargs["supabase_email_redirect_url"] = str(supabase_email_redirect_url).strip()
+    return watty_login_wizard(**kwargs)

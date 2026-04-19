@@ -11,6 +11,10 @@ SCOPES = [
 # Gemini
 GEMINI_MODEL = "gemini-2.5-flash"
 
+# Rodapé (LinkedIn: URL externa; Quem Somos / Termos são rotas internas na app)
+FOOTER_URL_LINKEDIN = "https://www.linkedin.com/company/wattylearn/"
+FOOTER_EMAIL_AJUDA = "wattyexplica@gmail.com"
+
 LISTA_ANOS = ["8º Ano", "9º Ano", "10º Ano", "11º Ano", "12º Ano"]
 
 DISCIPLINAS_BAS = [

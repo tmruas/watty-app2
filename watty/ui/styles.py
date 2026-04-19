@@ -22,13 +22,32 @@ def inject_global_styles() -> None:
     st.markdown(
         """
     <style>
-    /* 1. O Fundo Principal (Lavanda/Lilás Watty) */
+    @import url("https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400..1000;1,400..1000&display=swap");
+
+    /* Corpo ~10% maior para leitura (rem relativo à raiz). */
+    html {
+        font-size: 110%;
+    }
+
+    /* 1. O Fundo Principal (Lavanda/Lilás Watty) + tipografia estilo Duolingo (Nunito = substituto oficial) */
     .stApp {
         background-color: #E6DDF5;
+        font-family: "Nunito", "Segoe UI", system-ui, -apple-system, sans-serif;
+        line-height: 1.4;
+    }
+
+    /* Input de chat fixo no fundo: sem padding extra o rodapé fica por baixo da barra. */
+    .main .block-container {
+        padding-bottom: max(7rem, calc(env(safe-area-inset-bottom, 0px) + 5.5rem)) !important;
     }
 
     .stApp > header {
         background-color: transparent;
+    }
+
+    /* st.chat_input fica fixo ao fundo; sem isto o rodapé fica por baixo e parece “invisível” */
+    .stApp div.block-container {
+        padding-bottom: max(8rem, 150px) !important;
     }
 
     [data-testid="collapsedControl"],
@@ -93,7 +112,7 @@ def inject_global_styles() -> None:
         background-color: #9C27B0 !important;
         color: white !important;
         font-weight: 900 !important;
-        font-size: 18px !important;
+        font-size: 19px !important;
         border-radius: 16px;
         border: 2px solid #7B1FA2;
         box-shadow: 0px 6px 0px #7B1FA2;
@@ -123,26 +142,27 @@ def inject_global_styles() -> None:
     div[data-testid="metric-container"] label {
         font-weight: 800;
         color: #7B1FA2 !important;
-        font-size: 14px;
+        font-size: 15px;
         text-transform: uppercase;
     }
     div[data-testid="metric-container"] div[data-testid="stMetricValue"] {
         font-weight: 900;
         color: #4A148C !important;
-        font-size: 32px;
+        font-size: 35px;
     }
 
     h1, h2, h3 {
         color: #4A148C !important;
         font-weight: 900 !important;
-        letter-spacing: -0.5px;
+        letter-spacing: -0.02em;
+        line-height: 1.08;
     }
 
     .stTextInput input, .stTextArea textarea {
         border-radius: 16px;
         border: 2px solid #D1C4E9;
         padding: 14px;
-        font-size: 16px;
+        font-size: 17px;
         font-weight: 600;
         background-color: #FFFFFF !important;
         color: #4A148C !important;
@@ -202,7 +222,7 @@ def inject_global_styles() -> None:
 
         div.stButton > button:first-child {
             width: 100%;
-            font-size: 16px !important;
+            font-size: 17px !important;
             padding: 10px 14px;
         }
 
@@ -211,24 +231,24 @@ def inject_global_styles() -> None:
         }
 
         div[data-testid="metric-container"] div[data-testid="stMetricValue"] {
-            font-size: 24px;
+            font-size: 26px;
         }
 
         .stTextInput input, .stTextArea textarea {
-            font-size: 15px;
+            font-size: 16px;
             padding: 12px;
         }
     }
 
     @media (max-width: 480px) {
         h1 {
-            font-size: 1.6rem !important;
+            font-size: 1.72rem !important;
         }
         h2 {
-            font-size: 1.35rem !important;
+            font-size: 1.48rem !important;
         }
         h3 {
-            font-size: 1.15rem !important;
+            font-size: 1.26rem !important;
         }
 
         [data-testid="column"] {
@@ -265,6 +285,95 @@ def inject_global_styles() -> None:
     .watty-chat-skeleton .watty-sk-w95 { width: 95%; }
     .watty-chat-skeleton .watty-sk-w85 { width: 85%; }
     .watty-chat-skeleton .watty-sk-w60 { width: 60%; }
+
+    .watty-app-footer {
+        margin-top: 2.5rem;
+        padding: 1.25rem 0 0.5rem;
+        border-top: 2px solid rgba(49, 27, 82, 0.12);
+        text-align: center;
+    }
+    .watty-app-footer__nav {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem 0.5rem;
+        font-size: 1.02rem;
+        font-weight: 600;
+        color: #311B52;
+    }
+    .watty-app-footer__sep {
+        color: rgba(49, 27, 82, 0.35);
+        user-select: none;
+    }
+    .watty-app-footer__label {
+        color: rgba(49, 27, 82, 0.75);
+        margin-right: 0.25rem;
+    }
+    .watty-app-footer__group {
+        display: inline-flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 0.25rem;
+    }
+    .watty-app-footer .watty-app-footer__link {
+        color: #4A148C !important;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+        font-weight: 700;
+    }
+    .watty-app-footer .watty-app-footer__link:hover {
+        color: #7B1FA2 !important;
+    }
+
+    /* Rodapé só no login: links sublinhados, responsivo */
+    .watty-login-footer {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem 0.65rem;
+        margin-top: 1.75rem;
+        padding: 1rem 0.75rem 0.5rem;
+        border-top: 2px solid rgba(49, 27, 82, 0.12);
+        font-size: clamp(0.88rem, 2.8vw, 1.02rem);
+        font-weight: 600;
+        color: #311B52;
+        text-align: center;
+        max-width: 100%;
+    }
+    .watty-login-footer__link {
+        color: #4A148C !important;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+    .watty-login-footer__link:hover {
+        color: #7B1FA2 !important;
+    }
+    .watty-login-footer__sep {
+        color: rgba(49, 27, 82, 0.35);
+        user-select: none;
+    }
+    @media (max-width: 480px) {
+        .watty-login-footer {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .watty-login-footer__sep {
+            display: none;
+        }
+    }
+
+    /* Área principal: respiro em viewports estreitas */
+    @media (max-width: 768px) {
+        section[data-testid="stMain"] .block-container {
+            padding-left: max(1rem, env(safe-area-inset-left, 0px)) !important;
+            padding-right: max(1rem, env(safe-area-inset-right, 0px)) !important;
+        }
+    }
     </style>
 """.replace(
             "__HAMBURGER_BG__", bg

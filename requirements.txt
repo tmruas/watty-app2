@@ -1,4 +1,6 @@
-streamlit
+streamlit>=1.33
+extra-streamlit-components>=0.1.71
 google-genai
 gspread
 google-auth
+supabase

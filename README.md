@@ -2,6 +2,8 @@
 
 App Streamlit — tutor inteligente para alunos.
 
+Instruções de execução local: **[GUIA_EXECUCAO.md](GUIA_EXECUCAO.md)**.
+
 ## Arranque rápido
 
 ```bash
@@ -22,4 +24,4 @@ Na raiz do projeto:
 streamlit run app.py
 ```
 
-Configura `/.streamlit/secrets.toml` com as credenciais necessárias (Gemini, Google Sheets, etc.).
+Configura `.streamlit/secrets.toml` com Gemini, Google Sheets e **Supabase** (login); lista completa em [GUIA_EXECUCAO.md](GUIA_EXECUCAO.md).

@@ -3,21 +3,31 @@
 Antes do primeiro `streamlit run`, compila o onboarding React:
 `cd watty_login_wizard/frontend && npm ci && npm run build`
 (ver README.md).
+
+Requer segredos Supabase para o login (`SUPABASE_*` em `.streamlit/secrets.toml`; ver GUIA_EXECUCAO.md).
 """
 
 import streamlit as st
 
+from watty.services.auth_session import try_restore_session_from_cookies
 from watty.services.gemini import get_gemini_client, init_gemini_from_secrets
 from watty.ui.layout import (
     init_session_state,
+    render_app_top_bar,
+    render_guest_voltar_bar,
     render_hud_metrics,
+    render_login_footer_links,
     render_login_gate,
     render_sidebar,
+    sync_footer_nav_from_query_params,
 )
 from watty.ui.styles import inject_global_styles
 from watty.views.chat import render_chat_tab
+from watty.views.perfil import render_perfil_view
+from watty.views.quem_somos import render_quem_somos_view
 from watty.views.quiz import render_quiz_tab
 from watty.views.resumos import render_resumos_tab
+from watty.views.termos import render_termos_view
 
 st.set_page_config(
     page_title="Watty | O teu Tutor Inteligente",
@@ -29,9 +39,37 @@ st.set_page_config(
 init_gemini_from_secrets()
 inject_global_styles()
 init_session_state()
+try_restore_session_from_cookies()
+sync_footer_nav_from_query_params()
+
+route = st.session_state.get("ui_route", "main")
+
+# Visitante: páginas estáticas sem login
+if not st.session_state.logado and route in ("quem_somos", "termos"):
+    render_guest_voltar_bar()
+    if route == "quem_somos":
+        render_quem_somos_view()
+    else:
+        render_termos_view()
+    st.stop()
 
 if not st.session_state.logado:
     render_login_gate()
+    render_login_footer_links()
+    st.stop()
+
+# Autenticado: barra superior (menu + voltar em rotas auxiliares)
+render_app_top_bar()
+
+# Rotas auxiliares (perfil / institucional / termos)
+if route == "perfil":
+    render_perfil_view()
+    st.stop()
+if route == "quem_somos":
+    render_quem_somos_view()
+    st.stop()
+if route == "termos":
+    render_termos_view()
     st.stop()
 
 render_hud_metrics()

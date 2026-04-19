@@ -2,26 +2,41 @@
 @tailwind components;
 @tailwind utilities;
 
-html {
-  -webkit-text-size-adjust: 100%;
-  text-size-adjust: 100%;
-}
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    height: 100%;
+    /* +40% vs. o tamanho por omissão (~16px) — títulos e corpo escalam com rem. */
+    font-size: 140%;
+  }
 
-body {
-  margin: 0;
-  max-width: 100%;
-  overflow-x: clip;
-  background-color: #e6ddf5;
-  /* Crítico: altura = conteúdo. min-height: 100vh/100dvh faz document.body.scrollHeight
-     ≈ altura do ecrã e o Streamlit corta ou deixa banda vazia no iframe. */
-  min-height: 0;
-  height: auto;
+  body {
+    @apply font-sans leading-duobody antialiased;
+    margin: 0;
+    max-width: 100%;
+    overflow-x: clip;
+    background-color: #ffffff;
+    /* Percentagem da altura do iframe; flex para o #root preencher de cima a baixo. */
+    min-height: 100%;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /** Títulos curtos: peso forte + tracking ~Feather Bold (guidelines Duolingo). */
+  h1,
+  h2 {
+    @apply tracking-feather;
+    line-height: 1.08;
+  }
 }
 
 #root {
-  display: block;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
   width: 100%;
   max-width: 100%;
   min-height: 0;
-  height: auto;
 }
