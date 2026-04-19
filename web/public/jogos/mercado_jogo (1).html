@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Watty | Ministro da Economia</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800&family=JetBrains+Mono:wght@400;700&display=swap');
+:root{--bg:#0a0a12;--sf:#13131e;--sf2:#1a1a28;--bd:#252538;--dm:#f43f5e;--sp:#22d3ee;--eq:#a78bfa;--tx:#e2e8f0;--mu:#64748b;--ye:#fbbf24;--gn:#34d399;--re:#f87171;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--tx);font-family:'Space Grotesk',sans-serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(167,139,250,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(167,139,250,0.025) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0;}
+.screen{display:none;position:relative;z-index:1;}
+.screen.active{display:flex;flex-direction:column;min-height:100vh;}
+/* MENU */
+#menuScreen{align-items:center;justify-content:center;padding:24px;}
+.mwrap{max-width:600px;width:100%;text-align:center;}
+.wlogo{font-size:12px;font-weight:800;letter-spacing:3px;color:var(--eq);margin-bottom:28px;opacity:0.7;}
+.mtitle{font-size:clamp(26px,5vw,44px);font-weight:800;line-height:1.1;margin-bottom:10px;}
+.mtitle span{background:linear-gradient(135deg,var(--dm),var(--eq),var(--sp));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.msub{color:var(--mu);font-size:13px;margin-bottom:36px;line-height:1.7;}
+.mcards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:28px;}
+@media(max-width:500px){.mcards{grid-template-columns:1fr;}}
+.mcard{background:var(--sf);border:1.5px solid var(--bd);border-radius:14px;padding:18px 12px;cursor:pointer;transition:all 0.18s;text-align:center;}
+.mcard:hover,.mcard.sel{border-color:var(--eq);background:rgba(167,139,250,0.08);}
+.mcard .icon{font-size:32px;display:block;margin-bottom:8px;}
+.mcard h3{font-size:14px;font-weight:700;margin-bottom:3px;}
+.mcard p{font-size:11px;color:var(--mu);line-height:1.4;}
+.drow{display:flex;gap:8px;justify-content:center;margin-bottom:22px;flex-wrap:wrap;}
+.dbtn{background:var(--sf);border:1.5px solid var(--bd);border-radius:10px;padding:8px 16px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:700;color:var(--mu);transition:all 0.18s;}
+.dbtn.easy{border-color:var(--gn);color:var(--gn);background:rgba(52,211,153,0.08);}
+.dbtn.medium{border-color:var(--ye);color:var(--ye);background:rgba(251,191,36,0.08);}
+.dbtn.hard{border-color:var(--re);color:var(--re);background:rgba(248,113,113,0.08);}
+.sbtn{width:100%;padding:15px;background:linear-gradient(135deg,#7c3aed,#9C27B0);border:none;border-radius:13px;color:white;font-family:inherit;font-size:15px;font-weight:800;cursor:pointer;transition:all 0.18s;}
+.sbtn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(124,58,237,0.4);}
+/* GAME HEADER */
+#gameScreen{padding:0;}
+.ghdr{background:var(--sf);border-bottom:1px solid var(--bd);padding:10px 20px;position:sticky;top:0;z-index:50;}
+.ghi{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.mbadge{background:rgba(167,139,250,0.12);border:1px solid var(--eq);border-radius:7px;padding:3px 10px;font-size:11px;font-weight:700;color:var(--eq);}
+.rinfo{font-size:13px;font-weight:600;color:var(--mu);}
+.rinfo b{color:var(--tx);}
+.hstats{display:flex;gap:14px;align-items:center;}
+.hst .hl{font-size:9px;color:var(--mu);font-weight:700;text-transform:uppercase;letter-spacing:1px;}
+.hst .hv{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;}
+.hv.ye{color:var(--ye);}.hv.gn{color:var(--gn);}
+.hearts{display:flex;gap:3px;}
+.heart{font-size:17px;transition:all 0.3s;}.heart.gone{opacity:0.15;filter:grayscale(1);}
+/* GAME MAIN */
+.gmain{max-width:1100px;margin:0 auto;padding:18px;display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start;}
+@media(max-width:780px){.gmain{grid-template-columns:1fr;}}
+/* CHART */
+.cpanel{background:var(--sf);border:1px solid var(--bd);border-radius:15px;padding:18px;}
+.plbl{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mu);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.plbl::after{content:'';flex:1;height:1px;background:var(--bd);}
+.cwrap{position:relative;height:300px;}
+.eqrow{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px;}
+.eqcard{background:var(--sf2);border:1px solid var(--bd);border-radius:9px;padding:10px;text-align:center;}
+.ecl{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mu);margin-bottom:3px;}
+.ecv{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;}
+.ecv.ok{color:var(--gn);}.ecv.bad{color:var(--re);}.ecv.neu{color:var(--eq);}
+.tbar{font-size:11px;color:var(--gn);margin-top:8px;padding:8px 12px;background:rgba(34,197,94,0.07);border:1px solid rgba(34,197,94,0.2);border-radius:9px;}
+.pbanner{border-radius:10px;padding:10px 14px;font-size:12px;font-weight:700;text-align:center;margin-top:8px;transition:all 0.3s;}
+.pb-ev{background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);color:var(--ye);}
+.pb-ok{background:rgba(34,211,238,0.07);border:1px solid rgba(34,211,238,0.2);color:var(--sp);}
+.pb-bad{background:rgba(244,63,94,0.08);border:1px solid rgba(244,63,94,0.25);color:var(--dm);}
+.rresult{background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:11px 13px;font-size:12px;line-height:1.6;color:var(--mu);margin-top:8px;min-height:44px;}
+.rresult .ok{color:var(--gn);}.rresult .bad{color:var(--re);}
+/* RIGHT PANEL */
+.rpanel{display:flex;flex-direction:column;gap:12px;}
+.evcard{background:var(--sf);border:1.5px solid var(--bd);border-radius:15px;padding:16px;transition:border-color 0.3s,background 0.3s;}
+.evcard.ev-danger{border-color:rgba(244,63,94,0.5);background:rgba(244,63,94,0.04);}
+.evcard.ev-warning{border-color:rgba(251,191,36,0.4);background:rgba(251,191,36,0.03);}
+.evcard.ev-good{border-color:rgba(34,211,238,0.4);background:rgba(34,211,238,0.03);}
+.evico{font-size:28px;margin-bottom:6px;}
+.evtit{font-size:13px;font-weight:800;margin-bottom:3px;}
+.evdesc{font-size:11px;color:var(--mu);line-height:1.5;margin-bottom:10px;}
+.evtag{font-size:10px;font-weight:700;padding:3px 9px;border-radius:5px;display:inline-block;margin-bottom:12px;}
+.td{background:rgba(244,63,94,0.15);color:var(--dm);}
+.ts{background:rgba(34,211,238,0.15);color:var(--sp);}
+.tds{background:rgba(251,191,36,0.15);color:var(--ye);}
+.pollbl{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--mu);margin-bottom:7px;}
+.pbtn{width:100%;background:var(--sf2);border:1px solid var(--bd);border-radius:9px;padding:10px 12px;cursor:pointer;transition:all 0.15s;font-family:inherit;color:var(--tx);text-align:left;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.pbtn:hover:not(:disabled){border-color:var(--eq);background:rgba(167,139,250,0.07);transform:translateX(2px);}
+.pbtn:disabled{opacity:0.35;cursor:not-allowed;transform:none;}
+.pinfo{display:flex;flex-direction:column;gap:1px;}
+.pname{font-size:12px;font-weight:700;}
+.pdetail{font-size:10px;color:var(--mu);}
+.pproj{font-size:10px;font-weight:700;margin-top:2px;}
+.pcost{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--ye);flex-shrink:0;}
+.pcost.free{color:var(--gn);}
+.skipbtn{width:100%;background:transparent;border:1px dashed var(--bd);border-radius:9px;padding:8px;cursor:pointer;font-family:inherit;font-size:11px;color:var(--mu);transition:all 0.15s;}
+.skipbtn:hover:not(:disabled){border-color:var(--mu);color:var(--tx);}
+.skipbtn:disabled{opacity:0.3;cursor:not-allowed;}
+/* TOAST */
+.toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:10px 18px;font-size:12px;font-weight:700;z-index:300;opacity:0;transition:opacity 0.25s,top 0.25s;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;top:80px;}
+.toast.tok{border-color:var(--gn);color:var(--gn);}
+.toast.tbad{border-color:var(--re);color:var(--re);}
+/* END */
+#endScreen{align-items:center;justify-content:center;padding:24px;}
+.ewrap{max-width:500px;width:100%;text-align:center;}
+.eico{font-size:64px;margin-bottom:14px;}
+.etitle{font-size:clamp(22px,5vw,34px);font-weight:800;margin-bottom:7px;}
+.esub{font-size:13px;color:var(--mu);margin-bottom:28px;line-height:1.6;}
+.estats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px;}
+.estat{background:var(--sf);border:1px solid var(--bd);border-radius:11px;padding:14px;}
+.el{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--mu);margin-bottom:5px;}
+.ev{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--eq);}
+.elesson{background:rgba(167,139,250,0.07);border:1px solid rgba(167,139,250,0.18);border-radius:11px;padding:14px;font-size:12px;line-height:1.7;color:var(--tx);margin-bottom:22px;text-align:left;}
+.elesson strong{color:var(--eq);}
+.ebtns{display:flex;gap:8px;}
+.ebtn{flex:1;padding:13px;border-radius:11px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:all 0.18s;}
+.ebtn.pri{background:linear-gradient(135deg,#7c3aed,#9C27B0);border:none;color:white;}
+.ebtn.pri:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(124,58,237,0.4);}
+.ebtn.sec{background:var(--sf);border:1px solid var(--bd);color:var(--tx);}
+.ebtn.sec:hover{border-color:var(--mu);}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.shake{animation:shake 0.35s ease;}
+</style>
+</head>
+<body>
+
+<!-- MENU -->
+<div id="menuScreen" class="screen active">
+  <div class="mwrap">
+    <div class="wlogo">⚡ WATTY · SIMULADOR</div>
+    <h1 class="mtitle">Sou o <span>Ministro<br>da Economia</span></h1>
+    <p class="msub">Cada ronda um choque real abala o mercado.<br>Escolhe a política certa para manter o preço sob controlo — ou o país entra em colapso.</p>
+    <div class="mcards">
+      <div class="mcard sel" id="mc-gas" onclick="chooseMkt('gas')">
+        <span class="icon">⛽</span><h3>Gasolina</h3><p>Crise energética. Mantém os preços acessíveis.</p>
+      </div>
+      <div class="mcard" id="mc-house" onclick="chooseMkt('house')">
+        <span class="icon">🏠</span><h3>Habitação</h3><p>Mercado imobiliário. Combate a especulação.</p>
+      </div>
+      <div class="mcard" id="mc-food" onclick="chooseMkt('food')">
+        <span class="icon">🌾</span><h3>Alimentos</h3><p>Segurança alimentar. Evita a inflação dos preços.</p>
+      </div>
+    </div>
+    <div class="drow">
+      <button class="dbtn easy" id="d-easy" onclick="chooseDiff('easy')">🟢 Fácil · 8 rondas</button>
+      <button class="dbtn" id="d-medium" onclick="chooseDiff('medium')">🟡 Médio · 10 rondas</button>
+      <button class="dbtn" id="d-hard" onclick="chooseDiff('hard')">🔴 Difícil · 12 rondas</button>
+    </div>
+    <button class="sbtn" onclick="startGame()">Iniciar Mandato ⚡</button>
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="gameScreen" class="screen">
+  <div class="ghdr">
+    <div class="ghi">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="mbadge" id="hMkt">⛽ Gasolina</div>
+        <div class="rinfo">Ronda <b id="hRnd">1</b> / <b id="hTotal">8</b></div>
+      </div>
+      <div class="hstats">
+        <div class="hst"><div class="hl">Orçamento</div><div class="hv gn" id="hBudget">€500M</div></div>
+        <div class="hst"><div class="hl">Pontos</div><div class="hv ye" id="hScore">0</div></div>
+        <div class="hst"><div class="hl">Vidas</div><div class="hearts" id="hLives"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="gmain">
+    <div>
+      <div class="cpanel">
+        <div class="plbl">Diagrama de Mercado</div>
+        <div class="cwrap"><canvas id="gChart"></canvas></div>
+        <div class="eqrow">
+          <div class="eqcard"><div class="ecl">Preço Antes</div><div class="ecv neu" id="ecBefore">—</div></div>
+          <div class="eqcard"><div class="ecl">Após Evento</div><div class="ecv neu" id="ecAfterEv">—</div></div>
+          <div class="eqcard"><div class="ecl">Após Política</div><div class="ecv neu" id="ecAfterPol">—</div></div>
+          <div class="eqcard"><div class="ecl">Resultado</div><div class="ecv neu" id="ecResult">—</div></div>
+        </div>
+        <div class="tbar" id="tbar">🎯 Banda alvo: <span id="bandLbl"></span></div>
+        <div class="pbanner pb-ev" id="pbanner">📢 Evento chegou! Lê o choque e escolhe uma resposta.</div>
+        <div class="rresult" id="rresult">Escolhe uma política à direita para responder ao choque de mercado.</div>
+      </div>
+    </div>
+    <div class="rpanel">
+      <div class="evcard" id="evCard">
+        <div class="evico" id="evIco">🌍</div>
+        <div class="evtit" id="evTit">A carregar evento...</div>
+        <div class="evdesc" id="evDesc">Prepara-te para o primeiro choque.</div>
+        <span class="evtag td" id="evTag"></span>
+        <div class="pollbl">Resposta política:</div>
+        <div id="polWrap"></div>
+        <button class="skipbtn" id="skipBtn" onclick="applyPolicy(-1)">⏭ Não intervir — deixar o mercado agir sozinho</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- END -->
+<div id="endScreen" class="screen">
+  <div class="ewrap">
+    <div class="eico" id="endIco">🏆</div>
+    <h2 class="etitle" id="endTit">Mandato concluído!</h2>
+    <p class="esub" id="endSub">Conseguiste estabilizar o mercado.</p>
+    <div class="estats">
+      <div class="estat"><div class="el">Pontuação</div><div class="ev" id="eScore">0</div></div>
+      <div class="estat"><div class="el">Rondas estáveis</div><div class="ev" id="eStable">0/0</div></div>
+      <div class="estat"><div class="el">Orçamento restante</div><div class="ev" id="eBudget">€0M</div></div>
+      <div class="estat"><div class="el">Classificação</div><div class="ev" id="eRank">B</div></div>
+    </div>
+    <div class="elesson" id="endLesson"></div>
+    <div class="ebtns">
+      <button class="ebtn pri" onclick="restartGame()">↺ Jogar de Novo</button>
+      <button class="ebtn sec" onclick="goMenu()">🏠 Menu</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// MODELO DE PREÇOS SIMPLES E TESTÁVEL:
+// preço = basePx + (demand - supply) * pxPerUnit
+// demand e supply: inteiros de 1 a 10, começam em 5 (neutro)
+// inBand quando bandMin <= preço <= bandMax
+// ============================================================
+
+var MKT = {
+  gas:{
+    name:'⛽ Gasolina', pUnit:'€/L', qUnit:'M L',
+    basePx:1.80, pxPerUnit:0.08, baseQty:60, qPerUnit:4,
+    bandMin:1.30, bandMax:2.30,
+    events:[
+      {id:'opec', ico:'🛢️', tit:'OPEP corta produção', desc:'Os países produtores reduziram a extração em 20%. O abastecimento global cai.', tag:'Oferta ↓↓', tcls:'ts', dD:0, dS:-2, ecls:'ev-danger'},
+      {id:'war',  ico:'⚔️', tit:'Conflito no Médio Oriente', desc:'Tensão geopolítica ameaça rotas de abastecimento. Especuladores antecipam escassez.', tag:'Oferta ↓ · Procura ↑', tcls:'tds', dD:1, dS:-2, ecls:'ev-danger'},
+      {id:'sum',  ico:'☀️', tit:'Verão recorde de calor', desc:'Consumo de ar condicionado e viagens de férias fazem disparar a procura de combustível.', tag:'Procura ↑↑', tcls:'td', dD:2, dS:0, ecls:'ev-warning'},
+      {id:'rec',  ico:'📉', tit:'Recessão económica', desc:'Desemprego sobe e famílias reduzem deslocações. A procura de gasolina cai.', tag:'Procura ↓↓', tcls:'ts', dD:-2, dS:0, ecls:'ev-good'},
+      {id:'ev',   ico:'🚗', tit:'Boom dos carros elétricos', desc:'Vendas de veículos elétricos batem records. Menos portugueses precisam de gasolina.', tag:'Procura ↓', tcls:'ts', dD:-1, dS:0, ecls:'ev-good'},
+      {id:'ref',  ico:'🏭', tit:'Nova refinaria abre em Sines', desc:'Portugal inaugurou uma refinaria. A capacidade de produção nacional aumenta.', tag:'Oferta ↑↑', tcls:'ts', dD:0, dS:2, ecls:'ev-good'},
+      {id:'tax',  ico:'💸', tit:'Taxa de carbono europeia sobe', desc:'O parlamento europeu aumentou a taxa sobre emissões de CO₂. Custos de produção sobem.', tag:'Oferta ↓', tcls:'ts', dD:0, dS:-1, ecls:'ev-warning'},
+      {id:'lng',  ico:'🚢', tit:'Novo terminal de GNL', desc:'Novo terminal de gás natural liquefeito em Setúbal permite importar mais energia.', tag:'Oferta ↑', tcls:'ts', dD:0, dS:1, ecls:'ev-good'}
+    ],
+    policies:[
+      {name:'Abrir reservas estratégicas', detail:'Libertar stocks nacionais para o mercado', dD:0, dS:2,  cost:60,  pts:20},
+      {name:'Subsidiar combustível',       detail:'Estado paga parte do preço ao consumidor', dD:0, dS:3,  cost:120, pts:30},
+      {name:'Cortar ISP (imposto)',        detail:'Redução do imposto sobre prod. petrolíferos',dD:-1,dS:1, cost:50,  pts:15},
+      {name:'Importar de emergência',      detail:'Contrato urgente com países alternativos',  dD:0, dS:4,  cost:180, pts:40}
+    ]
+  },
+  house:{
+    name:'🏠 Habitação', pUnit:'€k', qUnit:'mil casas',
+    basePx:250, pxPerUnit:18, baseQty:40, qPerUnit:2,
+    bandMin:180, bandMax:330,
+    events:[
+      {id:'imig', ico:'✈️', tit:'Imigração recorde', desc:'Portugal recebeu 90 mil novos residentes. A procura por habitação disparou nas cidades.', tag:'Procura ↑↑', tcls:'td', dD:2, dS:0, ecls:'ev-danger'},
+      {id:'airb', ico:'🏡', tit:'Boom do Alojamento Local', desc:'Plataformas de aluguer retiram milhares de imóveis do mercado residencial.', tag:'Oferta ↓↓', tcls:'ts', dD:0, dS:-2, ecls:'ev-danger'},
+      {id:'rate', ico:'🏦', tit:'BCE sobe taxas de juro', desc:'Créditos à habitação ficam mais caros. Menos famílias conseguem comprar casa.', tag:'Procura ↓', tcls:'ts', dD:-1, dS:0, ecls:'ev-good'},
+      {id:'cons', ico:'🏗️', tit:'Programa de construção pública', desc:'Governo lançou programa de habitação acessível em 5 cidades.', tag:'Oferta ↑↑', tcls:'ts', dD:0, dS:2, ecls:'ev-good'},
+      {id:'rem',  ico:'💻', tit:'Trabalho remoto generalizado', desc:'Empresas permitem trabalho de qualquer local. Procura em cidades secundárias sobe.', tag:'Procura ↑', tcls:'td', dD:1, dS:-1, ecls:'ev-warning'},
+      {id:'spec', ico:'💰', tit:'Fundos internacionais entram', desc:'Fundos compram grandes blocos de apartamentos para arrendamento especulativo.', tag:'Procura ↑ · Oferta ↓', tcls:'tds', dD:1, dS:-2, ecls:'ev-danger'},
+      {id:'mat',  ico:'🪵', tit:'Escassez de materiais', desc:'Crise global de materiais de construção encarece e atrasa obras.', tag:'Oferta ↓', tcls:'ts', dD:0, dS:-1, ecls:'ev-warning'},
+      {id:'jov',  ico:'🎁', tit:'Apoios à compra jovem', desc:'Governo lançou isenções fiscais para jovens compradores até 35 anos.', tag:'Procura ↑', tcls:'td', dD:1, dS:0, ecls:'ev-warning'}
+    ],
+    policies:[
+      {name:'Limitar Alojamento Local',  detail:'Restringir licenças nas zonas tensionadas', dD:0,  dS:2, cost:0,   pts:25, free:true},
+      {name:'Construção acelerada',      detail:'Financiar construtoras privadas urgentemente',dD:0,  dS:3, cost:200, pts:35},
+      {name:'Controlo de rendas',        detail:'Teto máximo nas rendas por decreto',          dD:-1, dS:0, cost:0,   pts:10, free:true},
+      {name:'Incentivos fiscais IMT',    detail:'Isenção de IMT para novos projetos habitação', dD:0,  dS:2, cost:80,  pts:20}
+    ]
+  },
+  food:{
+    name:'🌾 Alimentos', pUnit:'€/kg', qUnit:'mil ton',
+    basePx:2.80, pxPerUnit:0.18, baseQty:55, qPerUnit:3,
+    bandMin:1.90, bandMax:3.80,
+    events:[
+      {id:'sec', ico:'🌵', tit:'Seca histórica em Portugal', desc:'Colheitas de cereais e hortícolas caíram 40%. Oferta alimentar nacional colapsa.', tag:'Oferta ↓↓↓', tcls:'ts', dD:0, dS:-3, ecls:'ev-danger'},
+      {id:'ukr', ico:'🌻', tit:'Bloqueio de exportações', desc:'O maior exportador mundial de trigo bloqueou as exportações por conflito armado.', tag:'Oferta ↓↓', tcls:'ts', dD:0, dS:-2, ecls:'ev-danger'},
+      {id:'pop', ico:'👶', tit:'Crescimento populacional', desc:'A população cresceu mais do esperado. A procura alimentar total sobe.', tag:'Procura ↑', tcls:'td', dD:1, dS:0, ecls:'ev-warning'},
+      {id:'col', ico:'🌱', tit:'Colheita recorde', desc:'Condições meteorológicas ideais produziram a maior colheita da última década.', tag:'Oferta ↑↑↑', tcls:'ts', dD:0, dS:3, ecls:'ev-good'},
+      {id:'log', ico:'🚢', tit:'Crise logística global', desc:'Escassez de contentores e greve nos portos encarece o transporte de alimentos.', tag:'Oferta ↓', tcls:'ts', dD:0, dS:-1, ecls:'ev-warning'},
+      {id:'veg', ico:'🥗', tit:'Tendência vegan acelera', desc:'Mudança de hábitos redistribui a procura. Vegetais sobem, carne desce.', tag:'Procura ↔', tcls:'tds', dD:-1, dS:1, ecls:'ev-warning'},
+      {id:'bio', ico:'🧬', tit:'Sementes OGM aprovadas', desc:'Portugal aprovou sementes resistentes e produtivas. Produção nacional aumenta.', tag:'Oferta ↑↑', tcls:'ts', dD:0, dS:2, ecls:'ev-good'},
+      {id:'ene', ico:'⚡', tit:'Energia mais cara', desc:'Fertilizantes e irrigação ficaram mais caros com a crise energética.', tag:'Oferta ↓', tcls:'ts', dD:0, dS:-1, ecls:'ev-danger'}
+    ],
+    policies:[
+      {name:'Importar de emergência',  detail:'Contratos urgentes com Brasil e Marrocos', dD:0,  dS:3, cost:90,  pts:30},
+      {name:'Subsidiar agricultores', detail:'Apoios diretos para manter produção nacional',dD:0,  dS:2, cost:130, pts:25},
+      {name:'Reservas estratégicas',  detail:'Libertar stocks alimentares nacionais',       dD:0,  dS:2, cost:50,  pts:20},
+      {name:'Controlo de preços',     detail:'Teto nos supermercados por 30 dias',          dD:-1, dS:0, cost:0,   pts:5, free:true}
+    ]
+  }
+};
+
+var DIFF = {
+  easy:   {rounds:8,  lives:3, budget:600},
+  medium: {rounds:10, lives:3, budget:450},
+  hard:   {rounds:12, lives:2, budget:350}
+};
+
+// State — no variable names conflict with function names
+var chosenMkt = 'gas';
+var chosenDiff = 'easy';
+var G = {};
+var myChart = null;
+
+// MENU
+function chooseMkt(m) {
+  chosenMkt = m;
+  ['gas','house','food'].forEach(function(k){
+    document.getElementById('mc-'+k).classList.toggle('sel', k===m);
+  });
+}
+
+function chooseDiff(d) {
+  chosenDiff = d;
+  ['easy','medium','hard'].forEach(function(k){
+    var el = document.getElementById('d-'+k);
+    el.className = 'dbtn' + (k===d ? ' '+k : '');
+  });
+}
+
+// PRICE MODEL
+function calcP(demand, supply) {
+  var m = MKT[G.market];
+  var p = m.basePx + (demand - supply) * m.pxPerUnit;
+  return Math.round(p * 100) / 100;
+}
+function calcQ(demand, supply) {
+  var m = MKT[G.market];
+  return Math.round(m.baseQty + (demand + supply - 10) * m.qPerUnit);
+}
+function isInBand(p) {
+  var m = MKT[G.market];
+  return p >= m.bandMin && p <= m.bandMax;
+}
+function fmtP(p) {
+  var m = MKT[G.market];
+  if (m.pUnit === '€k') return Math.round(p) + ' ' + m.pUnit;
+  return p.toFixed(2) + ' ' + m.pUnit;
+}
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+// CHART
+function initChart() {
+  if (myChart) { myChart.destroy(); myChart = null; }
+  var ctx = document.getElementById('gChart').getContext('2d');
+  myChart = new Chart(ctx, {
+    type: 'scatter',
+    data: { datasets: [
+      {label:'Procura (D)', data:[], borderColor:'#f43f5e', borderWidth:2.5, pointRadius:0, showLine:true, tension:0.15, order:3},
+      {label:'Oferta (S)',  data:[], borderColor:'#22d3ee', borderWidth:2.5, pointRadius:0, showLine:true, tension:0.15, order:3},
+      {label:'Equilíbrio', data:[], borderColor:'#a78bfa', backgroundColor:'#a78bfa', pointRadius:8, order:1},
+      {label:'Linhas',     data:[], borderColor:'rgba(167,139,250,0.25)', borderWidth:1, borderDash:[4,4], pointRadius:0, showLine:true, order:4},
+      {label:'BandaMin',   data:[], borderColor:'rgba(34,197,94,0.5)',   borderWidth:1.5, borderDash:[3,3], pointRadius:0, showLine:true, order:5},
+      {label:'BandaMax',   data:[], borderColor:'rgba(248,113,113,0.5)', borderWidth:1.5, borderDash:[3,3], pointRadius:0, showLine:true, order:5}
+    ]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      animation:{duration:400, easing:'easeInOutQuart'},
+      plugins:{
+        legend:{labels:{color:'#64748b',font:{family:'Space Grotesk',size:10,weight:'600'},boxWidth:10,padding:10,
+          filter:function(i){return i.text==='Procura (D)'||i.text==='Oferta (S)'||i.text==='Equilíbrio';}}},
+        tooltip:{backgroundColor:'#1a1a28',borderColor:'#252538',borderWidth:1,
+          titleColor:'#e2e8f0',bodyColor:'#94a3b8',padding:10}
+      },
+      scales:{
+        x:{title:{display:true,text:'Quantidade',color:'#475569',font:{size:11,weight:'700'}},
+           grid:{color:'rgba(37,37,56,0.8)'},ticks:{color:'#475569',font:{family:'JetBrains Mono',size:9}},min:0},
+        y:{title:{display:true,text:'Preço',color:'#475569',font:{size:11,weight:'700'}},
+           grid:{color:'rgba(37,37,56,0.8)'},ticks:{color:'#475569',font:{family:'JetBrains Mono',size:9}},min:0}
+      }
+    }
+  });
+}
+
+function drawCurves(demand, supply) {
+  var m = MKT[G.market];
+  var dData = [], sData = [];
+  // Generate smooth curves across a price range
+  for (var i = 0; i <= 20; i++) {
+    var pRaw = i / 20; // 0..1
+    var realP = m.basePx + (pRaw - 0.5) * m.pxPerUnit * 20;
+    if (realP < 0) continue;
+    // Demand: falls as price rises
+    var dQ = Math.max(0, m.baseQty + (demand-5)*m.qPerUnit*2 - (pRaw-0.5)*m.qPerUnit*12);
+    // Supply: rises as price rises
+    var sQ = Math.max(0, m.baseQty + (supply-5)*m.qPerUnit*2 + (pRaw-0.5)*m.qPerUnit*12);
+    dData.push({x: Math.round(dQ), y: Math.round(realP*100)/100});
+    sData.push({x: Math.round(sQ), y: Math.round(realP*100)/100});
+  }
+
+  var eqP = calcP(demand, supply);
+  var eqQ = calcQ(demand, supply);
+  var maxQ = 0;
+  dData.forEach(function(p){if(p.x>maxQ)maxQ=p.x;});
+  sData.forEach(function(p){if(p.x>maxQ)maxQ=p.x;});
+  maxQ += 10;
+
+  myChart.data.datasets[0].data = dData;
+  myChart.data.datasets[1].data = sData;
+  myChart.data.datasets[2].data = [{x:eqQ, y:eqP}];
+  myChart.data.datasets[3].data = [{x:0,y:eqP},{x:eqQ,y:eqP},{x:eqQ,y:0}];
+  myChart.data.datasets[4].data = [{x:0,y:m.bandMin},{x:maxQ,y:m.bandMin}];
+  myChart.data.datasets[5].data = [{x:0,y:m.bandMax},{x:maxQ,y:m.bandMax}];
+  myChart.update();
+}
+
+// GAME START
+function startGame() {
+  var m = MKT[chosenMkt];
+  var df = DIFF[chosenDiff];
+  G = {
+    market: chosenMkt,
+    round: 1,
+    totalRounds: df.rounds,
+    lives: df.lives,
+    maxLives: df.lives,
+    budget: df.budget,
+    score: 0,
+    stableRounds: 0,
+    demand: 5,
+    supply: 5,
+    usedEvents: [],
+    locked: false
+  };
+  showScreen('gameScreen');
+  initChart();
+  updateHeader();
+  startRound();
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  document.getElementById(id).classList.add('active');
+}
+
+// ROUND FLOW
+function startRound() {
+  if (G.round > G.totalRounds) { endGame(true); return; }
+  G.locked = false;
+  updateHeader();
+
+  var m = MKT[G.market];
+
+  // Price BEFORE event
+  var pBefore = calcP(G.demand, G.supply);
+
+  // Pick event (avoid repeating last 4)
+  var avail = m.events.filter(function(e){ return G.usedEvents.slice(-4).indexOf(e.id)===-1; });
+  if (avail.length === 0) avail = m.events;
+  var ev = avail[Math.floor(Math.random() * avail.length)];
+  G.usedEvents.push(ev.id);
+  G.currentEvent = ev;
+
+  // Apply event
+  G.demand = clamp(G.demand + ev.dD, 1, 10);
+  G.supply = clamp(G.supply + ev.dS, 1, 10);
+  var pAfterEv = calcP(G.demand, G.supply);
+
+  // Draw chart
+  drawCurves(G.demand, G.supply);
+
+  // Update price cards
+  setCard('ecBefore',   fmtP(pBefore),   'neu');
+  setCard('ecAfterEv',  fmtP(pAfterEv),  isInBand(pAfterEv)?'ok':'bad');
+  setCard('ecAfterPol', '—', 'neu');
+  setCard('ecResult',   '—', 'neu');
+
+  document.getElementById('bandLbl').textContent = fmtP(m.bandMin) + ' – ' + fmtP(m.bandMax);
+  document.getElementById('pbanner').textContent = '📢 Evento! O choque já afetou o mercado.';
+  document.getElementById('pbanner').className = 'pbanner pb-ev';
+
+  if (isInBand(pAfterEv)) {
+    document.getElementById('rresult').innerHTML = 'O choque não foi grave — preço manteve-se na banda. Podes intervir ou deixar o mercado agir.';
+  } else {
+    var dir = pAfterEv > m.bandMax ? 'subiu acima do máximo' : 'desceu abaixo do mínimo';
+    document.getElementById('rresult').innerHTML = '⚠️ O preço <b>' + dir + '</b> da banda alvo! Escolhe uma política para corrigir.';
+  }
+
+  // Show event card
+  document.getElementById('evCard').className = 'evcard ' + ev.ecls;
+  document.getElementById('evIco').textContent  = ev.ico;
+  document.getElementById('evTit').textContent  = ev.tit;
+  document.getElementById('evDesc').textContent = ev.desc;
+  var tag = document.getElementById('evTag');
+  tag.textContent = ev.tag;
+  tag.className = 'evtag ' + ev.tcls;
+
+  buildPolicies();
+}
+
+function buildPolicies() {
+  var m = MKT[G.market];
+  var wrap = document.getElementById('polWrap');
+  wrap.innerHTML = '';
+  m.policies.forEach(function(pol, idx) {
+    var canAfford = pol.free || G.budget >= pol.cost;
+    // Project price if this policy is applied
+    var projD = clamp(G.demand + pol.dD, 1, 10);
+    var projS = clamp(G.supply + pol.dS, 1, 10);
+    var projP = calcP(projD, projS);
+    var willFix = isInBand(projP);
+
+    var btn = document.createElement('button');
+    btn.className = 'pbtn';
+    btn.disabled = !canAfford;
+    btn.setAttribute('data-idx', idx);
+    btn.onclick = function(){ applyPolicy(parseInt(this.getAttribute('data-idx'))); };
+    btn.innerHTML =
+      '<div class="pinfo">' +
+        '<div class="pname">' + pol.name + '</div>' +
+        '<div class="pdetail">' + pol.detail + '</div>' +
+        '<div class="pproj" style="color:' + (willFix?'#34d399':'#fbbf24') + '">' +
+          'Preço previsto: ' + fmtP(projP) + ' ' + (willFix ? '✅' : '⚠️') +
+        '</div>' +
+      '</div>' +
+      '<div class="pcost' + (pol.free?' free':'') + '">' + (pol.free ? 'Grátis' : '€'+pol.cost+'M') + '</div>';
+    wrap.appendChild(btn);
+  });
+  document.getElementById('skipBtn').disabled = false;
+}
+
+function applyPolicy(idx) {
+  if (G.locked) return;
+  G.locked = true;
+
+  // Disable all buttons
+  document.querySelectorAll('.pbtn, .skipbtn').forEach(function(b){ b.disabled = true; });
+
+  var m = MKT[G.market];
+  var polName = 'Não intervenção';
+  var bonusPts = 0;
+
+  if (idx >= 0) {
+    var pol = m.policies[idx];
+    G.budget -= pol.cost;
+    G.demand = clamp(G.demand + pol.dD, 1, 10);
+    G.supply = clamp(G.supply + pol.dS, 1, 10);
+    polName = pol.name;
+    bonusPts = pol.pts;
+  }
+
+  var finalP = calcP(G.demand, G.supply);
+  drawCurves(G.demand, G.supply);
+
+  setCard('ecAfterPol', fmtP(finalP), isInBand(finalP)?'ok':'bad');
+
+  var ok = isInBand(finalP);
+
+  if (ok) {
+    G.stableRounds++;
+    G.score += 100 + bonusPts;
+    setCard('ecResult', '✅ Estável', 'ok');
+    document.getElementById('pbanner').textContent = '✅ Ronda estável!';
+    document.getElementById('pbanner').className = 'pbanner pb-ok';
+    document.getElementById('rresult').innerHTML =
+      '<span class="ok">✅ Estabilizado!</span> Preço: ' + fmtP(finalP) +
+      ' dentro da banda ' + fmtP(m.bandMin) + '–' + fmtP(m.bandMax) +
+      '. <b>+' + (100+bonusPts) + ' pontos.</b> ' +
+      (idx>=0 ? '"'+polName+'" foi eficaz.' : 'O mercado corrigiu-se sozinho.');
+    showToast('✅ +' + (100+bonusPts) + ' pontos!', 'tok');
+  } else {
+    G.lives--;
+    setCard('ecResult', '❌ Fora', 'bad');
+    document.getElementById('pbanner').textContent = '❌ Preço fora da banda!';
+    document.getElementById('pbanner').className = 'pbanner pb-bad';
+    document.getElementById('rresult').innerHTML =
+      '<span class="bad">❌ Falhou!</span> Preço em ' + fmtP(finalP) +
+      ', fora da banda. Perdeste uma vida. Restam ' + G.lives + ' ❤️';
+    showToast('❌ Preço fora de controlo!', 'tbad');
+    var lv = document.getElementById('hLives');
+    lv.classList.add('shake');
+    setTimeout(function(){ lv.classList.remove('shake'); }, 400);
+  }
+
+  updateHeader();
+
+  if (G.lives <= 0) {
+    setTimeout(function(){ endGame(false); }, 1600);
+    return;
+  }
+
+  setTimeout(function(){
+    G.round++;
+    startRound();
+  }, 2600);
+}
+
+function setCard(id, txt, cls) {
+  var el = document.getElementById(id);
+  el.textContent = txt;
+  el.className = 'ecv ' + cls;
+}
+
+function showToast(msg, cls) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + cls;
+  setTimeout(function(){ t.className = 'toast'; }, 2200);
+}
+
+function updateHeader() {
+  document.getElementById('hMkt').textContent    = MKT[G.market].name;
+  document.getElementById('hRnd').textContent    = G.round;
+  document.getElementById('hTotal').textContent  = G.totalRounds;
+  document.getElementById('hBudget').textContent = '€' + G.budget + 'M';
+  document.getElementById('hScore').textContent  = G.score;
+  var h = '';
+  for (var i = 0; i < G.maxLives; i++) {
+    h += '<span class="heart' + (i >= G.lives ? ' gone' : '') + '">❤️</span>';
+  }
+  document.getElementById('hLives').innerHTML = h;
+}
+
+function endGame(won) {
+  var pct = G.stableRounds / G.totalRounds;
+  var rank = pct>=0.9?'S':pct>=0.75?'A':pct>=0.55?'B':pct>=0.35?'C':'D';
+  var icons = {S:'🥇',A:'🏆',B:'🎖️',C:'📊',D:'📉'};
+  var winTitles = {S:'Ministro Lendário!',A:'Excelente Mandato!',B:'Bom Trabalho!',C:'Mandato Suficiente',D:'Mandato Difícil'};
+  var winSubs   = {S:'Perfeito — o mercado nunca saiu do controlo.',A:'Quase perfeito. Um único deslize.',B:'Estabilizaste a maioria das rondas.',C:'Sobreviveste, mas o mercado foi instável.',D:'Chegaste ao fim, mas com muita dificuldade.'};
+  var lessons = {
+    gas:'<strong>O que aprendeste:</strong> A oferta e procura de combustível são altamente sensíveis a choques externos (OPEP, conflitos). As <em>reservas estratégicas</em> são o instrumento mais rápido para estabilizar. Nos exames: identifica sempre se o choque é na <em>oferta</em> ou <em>procura</em> antes de propor qualquer política.',
+    house:'<strong>O que aprendeste:</strong> O mercado imobiliário tem <em>rigidez de oferta</em> — construir casas demora anos. Por isso, choques de procura (imigração, crédito barato) têm efeitos duradouros. O <em>controlo de rendas</em> alivia a curto prazo mas desincentiva nova construção.',
+    food:'<strong>O que aprendeste:</strong> A segurança alimentar é estratégica. Choques climáticos afetam uma oferta <em>inelástica</em>. As importações de emergência são o instrumento mais rápido mas criam dependência externa. Nos exames: procura e oferta alimentar são inelásticas ao preço no curto prazo.'
+  };
+
+  document.getElementById('endIco').textContent    = won ? icons[rank] : '💥';
+  document.getElementById('endTit').textContent    = won ? winTitles[rank] : 'Eliminado — País em Colapso!';
+  document.getElementById('endSub').textContent    = won ? winSubs[rank]   : 'As vidas acabaram. O mercado colapsou sem controlo.';
+  document.getElementById('eScore').textContent    = G.score;
+  document.getElementById('eStable').textContent   = G.stableRounds + '/' + G.totalRounds;
+  document.getElementById('eBudget').textContent   = '€' + G.budget + 'M';
+  document.getElementById('eRank').textContent     = rank;
+  document.getElementById('endLesson').innerHTML   = lessons[G.market];
+  showScreen('endScreen');
+}
+
+function restartGame() { startGame(); }
+function goMenu() { showScreen('menuScreen'); }
+</script>
+</body>
+</html>

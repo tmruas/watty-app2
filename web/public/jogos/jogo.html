@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoGov: Global Edition - Masterclass Economia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body { background-color: #0f172a; color: #e2e8f0; font-family: 'Segoe UI', sans-serif; }
+        .card { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid #334155; border-radius: 12px; }
+        .table-row-hover:hover { background-color: rgba(51, 65, 85, 0.5); }
+        .scroll-area { max-height: 400px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #475569 #1e293b; }
+        .tooltip { position: relative; cursor: help; border-bottom: 1px dotted #64748b; }
+        .tooltip:hover::after {
+            content: attr(data-tip);
+            position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+            background: #1e293b; color: white; padding: 10px; border-radius: 6px;
+            font-size: 0.75rem; white-space: normal; width: max-content; max-width: 250px; z-index: 50; border: 1px solid #475569;
+        }
+        #loginOverlay {
+            position: fixed; inset: 0; background-color: #020617; z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .balance-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed #334155; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <div id="loginOverlay">
+        <div class="bg-slate-800 p-8 rounded-2xl border border-blue-500/50 shadow-2xl max-w-md w-full text-center">
+            <div class="bg-blue-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/50">
+                <i class="fa-solid fa-landmark text-3xl text-white"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-white mb-2">EcoGov: Missão Portugal</h1>
+            <p class="text-slate-400 mb-6 text-sm">Assume a governação. Os teus resultados vão diretamente para a pauta do Professor.</p>
+            
+            <input type="text" id="playerNameInput" placeholder="Nome do Ministro (Aluno)" class="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-3 text-white mb-4 focus:border-blue-500 focus:outline-none text-center font-bold">
+            
+            <button onclick="startGame()" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 rounded-lg transition-all shadow-lg">
+                Iniciar Novo Mandato <i class="fa-solid fa-play ml-2"></i>
+            </button>
+
+            <div id="continueGameDiv" class="hidden mt-4 pt-4 border-t border-slate-700">
+                <p class="text-xs text-yellow-400 mb-2 font-bold"><i class="fa-solid fa-floppy-disk"></i> Progresso Encontrado!</p>
+                <button onclick="resumeGame()" class="w-full bg-slate-700 hover:bg-slate-600 border border-slate-500 text-white font-bold py-3 rounded-lg transition-all">
+                    Continuar Mandato Guardado
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <header class="bg-slate-900 border-b border-slate-700 p-3 sticky top-0 z-50 shadow-lg hidden" id="mainHeader">
+        <div class="max-w-[1600px] mx-auto flex flex-col xl:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-600 p-2 rounded-lg"><i class="fa-solid fa-flag-placeholder"></i><i class="fa-solid fa-earth-europe text-white text-xl"></i></div>
+                <div>
+                    <h1 class="text-lg font-bold text-white leading-tight">EcoGov: Portugal</h1>
+                    <p class="text-xs text-slate-400">Min. <span id="playerNameDisplay" class="text-blue-300 font-bold">...</span> | Ano <span id="yearDisplay" class="text-yellow-400 font-bold">1</span> / 15</p>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap justify-center gap-6 text-sm bg-slate-800/50 p-2 rounded-xl border border-slate-700">
+                <div class="flex flex-col items-center px-2">
+                    <span class="text-xs text-slate-400">Cofre de Estado</span>
+                    <span id="moneyDisplay" class="font-bold text-blue-400 text-lg">€ 500M</span>
+                </div>
+                
+                <div class="w-px h-8 bg-slate-600"></div>
+
+                <div class="flex flex-col items-center px-2">
+                    <span class="text-xs text-slate-400 tooltip" data-tip="Multa da UE se Défice for < -3%">Défice Orçamental</span>
+                    <span id="deficitDisplay" class="font-bold text-green-400 text-lg">0.0%</span>
+                </div>
+
+                <div class="w-px h-8 bg-slate-600"></div>
+
+                <div class="flex flex-col items-center px-2">
+                    <span class="text-xs text-slate-400 tooltip" data-tip="Regra UE: Dívida Máxima de 60% do PIB">Dívida Pública</span>
+                    <span id="debtDisplay" class="font-bold text-orange-400 text-lg">55.0%</span>
+                </div>
+
+                <div class="w-px h-8 bg-slate-600"></div>
+
+                <div class="flex flex-col items-center px-2 w-32">
+                    <span class="text-xs text-slate-400">Bem-Estar</span>
+                    <div class="w-full bg-slate-700 h-2 rounded-full mt-1">
+                        <div id="healthBar" class="bg-green-500 h-2 rounded-full transition-all" style="width: 100%"></div>
+                    </div>
+                    <span id="healthValue" class="text-xs mt-1">100%</span>
+                </div>
+            </div>
+            
+            <div class="flex gap-2">
+                <button onclick="clearSaveAndRestart()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 px-3 py-2 rounded-lg font-bold shadow transition-all text-sm flex items-center gap-2" title="Apagar gravação e recomeçar">
+                    <i class="fa-solid fa-power-off"></i> Sair
+                </button>
+
+                <button onclick="resetTurn()" class="bg-red-900/80 hover:bg-red-800 text-red-100 border border-red-700 px-3 py-2 rounded-lg font-bold shadow transition-all text-sm flex items-center gap-2" title="Desfazer ações do ano">
+                    <i class="fa-solid fa-rotate-left"></i> Reset Turno
+                </button>
+
+                <button onclick="nextYear()" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-5 py-2 rounded-lg font-bold shadow-lg transition-all text-sm flex items-center gap-2">
+                    <span>Avançar Ano</span> <i class="fa-solid fa-gavel"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow p-4 max-w-[1600px] mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-6 hidden" id="mainContent">
+
+        <div class="lg:col-span-3 space-y-6">
+            <div id="eventWarningCard" class="card p-4 border-l-4 border-l-yellow-500 bg-slate-800">
+                </div>
+
+            <div class="card p-4">
+                <h2 class="font-bold text-pink-400 mb-3 text-sm flex items-center gap-2"><i class="fa-solid fa-basket-shopping"></i> Necessidades da População</h2>
+                <div id="needsContainer" class="space-y-3 text-xs"></div>
+            </div>
+
+            <div class="card p-4 bg-gradient-to-br from-slate-800 to-slate-900">
+                <h2 class="font-bold text-yellow-400 mb-3 text-sm flex items-center gap-2 tooltip" data-tip="Se tiveres Matérias-primas ou Energia em stock, a Indústria consome-as para dar um Boost de produção!">
+                    <i class="fa-solid fa-industry"></i> Indústria Nacional
+                </h2>
+                <div id="industryContainer" class="space-y-2"></div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-6 flex flex-col gap-4">
+            <div class="card p-4 flex flex-col md:flex-row gap-3 items-center justify-between">
+                <input type="text" id="searchInput" onkeyup="filterMarket()" placeholder="Procurar produto..." class="w-full md:w-1/2 bg-slate-900 border border-slate-600 rounded px-4 py-2 text-xs text-white">
+                <select id="categoryFilter" onchange="filterMarket()" class="bg-slate-900 border border-slate-600 rounded px-2 py-2 text-xs text-white w-full md:w-1/3">
+                    <option value="all">Todas as Categorias</option>
+                    <option value="Alimentação">Alimentação</option>
+                    <option value="Energia">Energia</option>
+                    <option value="Manufaturados">Manufaturados</option>
+                    <option value="Tecnologia">Tecnologia</option>
+                    <option value="Matérias-primas">Matérias-primas</option>
+                    <option value="Serviços">Serviços</option>
+                </select>
+            </div>
+
+            <div class="card flex-grow overflow-hidden flex flex-col">
+                <div class="p-3 border-b border-slate-700 bg-slate-800/50 flex justify-between items-center">
+                    <h2 class="font-bold text-blue-400 text-sm"><i class="fa-solid fa-globe"></i> Mercado Global</h2>
+                    <span id="syncStatus" class="text-[10px] text-green-400 bg-green-900/30 px-2 py-1 rounded hidden"><i class="fa-solid fa-cloud-arrow-up"></i> Conectado ao Professor</span>
+                </div>
+                <div class="scroll-area flex-grow">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="sticky top-0 bg-slate-800 text-xs uppercase text-slate-400 font-semibold z-10">
+                            <tr>
+                                <th class="p-3">Produto</th>
+                                <th class="p-3 text-center">Teu Stock</th>
+                                <th class="p-3 text-right">Preço Un.</th>
+                                <th class="p-3 w-64">Comércio Externo (Qtd)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="marketTableBody" class="text-sm divide-y divide-slate-700/50">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-3 space-y-6">
+            
+            <div class="card p-4">
+                <h2 class="font-bold text-cyan-400 text-sm mb-3 border-b border-cyan-900 pb-2"><i class="fa-solid fa-scale-balanced"></i> Balança de Pagamentos</h2>
+                
+                <div class="bg-slate-900 p-2 rounded border border-slate-600 mb-3 text-center">
+                    <span class="text-xs text-slate-400 tooltip" data-tip="Taxa de Cobertura = (Exportações / Importações) x 100. Mostra que percentagem das compras é paga pelas vendas.">Taxa de Cobertura Comercial</span>
+                    <div id="coverageRate" class="text-xl font-bold text-white">0%</div>
+                </div>
+
+                <div class="mb-3">
+                    <h3 class="text-xs font-bold text-blue-300 tooltip" data-tip="Regista as trocas de Bens e Serviços com o exterior.">Balança Corrente</h3>
+                    <div class="text-[11px] font-mono mt-1">
+                        <div class="balance-row"><span class="text-green-400">Exportações (Crédito +)</span><span id="exportVal">€0</span></div>
+                        <div class="balance-row"><span class="text-red-400">Importações (Débito -)</span><span id="importVal">€0</span></div>
+                        <div class="balance-row font-bold bg-slate-800/50 mt-1 p-1"><span class="text-slate-300">Saldo Corrente:</span><span id="currentBalanceVal">€0</span></div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <h3 class="text-xs font-bold text-yellow-300 tooltip" data-tip="Regista transferências de capital, como os Fundos Estruturais da UE.">Balança de Capital</h3>
+                    <div class="text-[11px] font-mono mt-1">
+                        <div class="balance-row"><span class="text-green-400">Fundos UE (Crédito +)</span><span id="capitalCreditVal">€ 100M</span></div>
+                        <div class="balance-row font-bold bg-slate-800/50 mt-1 p-1"><span class="text-slate-300">Saldo de Capital:</span><span class="text-green-400">€ 100M</span></div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-xs font-bold text-purple-300 tooltip" data-tip="Regista fluxos de empréstimos, investimentos e amortizações de dívida.">Balança Financeira (Previsão)</h3>
+                    <div class="text-[10px] text-slate-400 italic mt-1 leading-tight">
+                        * Se houver défice este ano, o Estado contrai novos empréstimos (Crédito). Se houver excedente, paga dívida (Débito).
+                    </div>
+                </div>
+            </div>
+
+            <div class="card p-4 bg-slate-800 text-center relative overflow-hidden">
+                <span class="text-xs text-slate-400 uppercase tracking-widest">XP de Governação</span>
+                <div id="xpDisplay" class="text-3xl font-black text-white my-1">0</div>
+                <div class="text-[10px] text-yellow-500">Rank: <span id="rankTitle">Estagiário</span></div>
+            </div>
+        </div>
+
+    </main>
+
+    <div id="reportModal" class="fixed inset-0 bg-black/90 hidden z-[100] flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-600 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <h2 class="text-xl font-bold text-white mb-4">Fecho de Contas: Ano <span id="modalYear"></span></h2>
+            
+            <div class="space-y-3 mb-6">
+                <div class="bg-slate-900 p-3 rounded text-sm">
+                    <h3 class="font-bold text-cyan-400 mb-2 border-b border-slate-700 pb-1">Balança de Pagamentos Total</h3>
+                    <div class="flex justify-between text-slate-300"><span>Saldo Corrente:</span> <span id="modalCorrente" class="font-mono"></span></div>
+                    <div class="flex justify-between text-slate-300"><span>Saldo Capital (UE):</span> <span class="font-mono text-green-400">+ € 100M</span></div>
+                    <div class="flex justify-between font-bold mt-2 pt-1 border-t border-slate-700"><span>Necessidade Liq. Financiamento:</span> <span id="modalBalance" class="font-mono text-lg"></span></div>
+                </div>
+
+                <div class="bg-slate-900 p-3 rounded flex justify-between items-center">
+                    <span class="text-sm text-slate-400 tooltip" data-tip="Ações na Balança Financeira">Movimento Financeiro:</span>
+                    <span id="modalFinancialAction" class="font-bold text-xs"></span>
+                </div>
+
+                <div class="bg-slate-900 p-3 rounded">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-sm text-slate-400">Bem-Estar</span>
+                        <span id="modalHealthVar" class="font-bold text-sm"></span>
+                    </div>
+                    <p id="modalHealthReason" class="text-xs text-slate-500 italic"></p>
+                </div>
+            </div>
+            <button onclick="closeModal()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg">Iniciar Ano Seguinte</button>
+        </div>
+    </div>
+
+    <div id="endGameModal" class="fixed inset-0 bg-black/95 hidden z-[200] flex items-center justify-center p-4">
+        <div class="bg-slate-800 border-2 border-yellow-500 rounded-2xl max-w-lg w-full p-8 shadow-2xl text-center">
+            <i class="fa-solid fa-trophy text-5xl text-yellow-500 mb-4 animate-bounce"></i>
+            <h2 class="text-3xl font-black text-white mb-2">Mandato Terminado!</h2>
+            <div class="bg-slate-900 p-6 rounded-xl border border-slate-700 mb-6 mt-4">
+                <p class="text-xs text-slate-500 uppercase tracking-widest mb-1">XP Final Sincronizado</p>
+                <div id="finalXP" class="text-5xl font-black text-white mb-2">0</div>
+            </div>
+            <p class="text-sm text-slate-400 mb-6">Os teus resultados foram gravados na pauta do professor. Podes fechar a janela.</p>
+            <button onclick="clearSaveAndRestart()" class="px-6 py-2 bg-slate-700 text-white rounded mt-4">Voltar ao Início</button>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. URL DO GOOGLE SHEETS
+        // ==========================================
+        const GOOGLE_SHEETS_URL = "COLA_AQUI_O_TEU_LINK"; 
+
+        // ==========================================
+        // 2. DADOS E CONFIGURAÇÃO
+        // ==========================================
+        const SAVE_KEY = "ecoGovSave_v4"; 
+        
+        const countries = [
+            { id: 'ES', name: 'Espanha', region: 'UE', tariff: 1.0, dist: 1.05 },
+            { id: 'FR', name: 'França', region: 'UE', tariff: 1.0, dist: 1.1 },
+            { id: 'DE', name: 'Alemanha', region: 'UE', tariff: 1.0, dist: 1.15 },
+            { id: 'IT', name: 'Itália', region: 'UE', tariff: 1.0, dist: 1.12 },
+            { id: 'GB', name: 'Reino Unido', region: 'Europe', tariff: 1.10, dist: 1.1 },
+            { id: 'US', name: 'EUA', region: 'America', tariff: 1.15, dist: 1.4 },
+            { id: 'CA', name: 'Canadá', region: 'America', tariff: 1.12, dist: 1.45 },
+            { id: 'BR', name: 'Brasil', region: 'CPLP', tariff: 1.05, dist: 1.5 },
+            { id: 'AO', name: 'Angola', region: 'CPLP', tariff: 1.05, dist: 1.4 },
+            { id: 'MZ', name: 'Moçambique', region: 'CPLP', tariff: 1.05, dist: 1.45 },
+            { id: 'CN', name: 'China', region: 'Asia', tariff: 1.12, dist: 1.8 },
+            { id: 'JP', name: 'Japão', region: 'Asia', tariff: 1.15, dist: 1.9 },
+            { id: 'IN', name: 'Índia', region: 'Asia', tariff: 1.10, dist: 1.7 }
+        ];
+
+        const rawProducts = [
+            ['Trigo', 'Alimentação', 10], ['Milho', 'Alimentação', 8], ['Arroz', 'Alimentação', 12], 
+            ['Azeite', 'Alimentação', 40], ['Vinho', 'Alimentação', 35], 
+            ['Petróleo', 'Energia', 80], ['Gás Natural', 'Energia', 60], ['Eletricidade', 'Energia', 20],
+            ['Microchips', 'Tecnologia', 300], ['Smartphones', 'Tecnologia', 400], ['Software', 'Tecnologia', 100],
+            ['Cortiça', 'Matérias-primas', 50], ['Madeira', 'Matérias-primas', 30], ['Lítio', 'Matérias-primas', 120],
+            ['Automóveis', 'Manufaturados', 1500], ['Calçado', 'Manufaturados', 40], ['Têxteis', 'Manufaturados', 20],
+            ['Turismo', 'Serviços', 150]
+        ];
+
+        let marketProducts = rawProducts.map((p, index) => ({
+            id: index, name: p[0], category: p[1], basePrice: p[2], stock: 0
+        }));
+
+        marketProducts.forEach(p => {
+            if(['Azeite', 'Vinho', 'Cortiça'].includes(p.name)) p.stock = 40; 
+            if(['Calçado', 'Têxteis', 'Turismo'].includes(p.name)) p.stock = 30;
+            if(['Trigo', 'Petróleo', 'Microchips', 'Eletricidade'].includes(p.name)) p.stock = 0; 
+        });
+
+        // Configuração do custo e do que cada indústria precisa para o Boost
+        const infoInd = {
+            'Alimentação': { custo: 1500, consome: 'Energia' },
+            'Energia': { custo: 2500, consome: 'Matérias-primas' },
+            'Manufaturados': { custo: 2000, consome: 'Matérias-primas' },
+            'Tecnologia': { custo: 4000, consome: 'Matérias-primas' }
+        };
+
+        let gameState = {
+            playerName: "Anónimo", year: 1, maxYears: 15,
+            money: 500, 
+            debt: 120000, gdp: 200000, 
+            health: 100, xp: 0,
+            currentExports: 0, currentImports: 0,
+            capitalFunds: 100,
+            tradePartners: new Set(), industries: [], needs: {},
+            countryFluctuations: {}, currentEvent: null
+        };
+
+        let turnSnapshot = null;
+
+        // ==========================================
+        // 3. EVENTOS, INICIALIZAÇÃO E SAVE SYSTEM
+        // ==========================================
+
+        function generateYearlyEvents() {
+            countries.forEach(c => { gameState.countryFluctuations[c.name] = 0.7 + (Math.random() * 0.6); });
+
+            const events = [
+                { t: "Mercado Estável", d: "A economia global respira de alívio. Sem grandes sobressaltos.", type: "none" },
+                { t: "Crise do Petróleo", d: "Os preços da Energia subiram +80% no mercado global!", type: "cat", cat: "Energia", mult: 1.8 },
+                { t: "Super-Produção Agrícola", d: "A abundância de cereais fez os preços da Alimentação cair 40%.", type: "cat", cat: "Alimentação", mult: 0.6 },
+                { t: "Tensão Diplomática", d: "As potências Asiáticas aumentaram os custos comerciais em 50%.", type: "region", reg: "Asia", mult: 1.5 },
+                { t: "Acordo CPLP", d: "Países de língua portuguesa oferecem vantagens comerciais (Desconto 30%).", type: "region", reg: "CPLP", mult: 0.7 },
+                { t: "Inverno Rigoroso", d: "As necessidades de Energia da população duplicaram este ano!", type: "need", need: "Energia", mult: 2.0 },
+                { t: "Febre Consumista", d: "As necessidades de bens Manufaturados subiram drasticamente.", type: "need", need: "Manufaturados", mult: 1.8 }
+            ];
+            gameState.currentEvent = events[Math.floor(Math.random() * events.length)];
+        }
+
+        window.onload = () => {
+            if(localStorage.getItem(SAVE_KEY)) {
+                document.getElementById('continueGameDiv').classList.remove('hidden');
+            }
+        };
+
+        function saveGame() {
+            const saveData = {
+                gameState: JSON.parse(JSON.stringify(gameState)),
+                marketProducts: JSON.parse(JSON.stringify(marketProducts))
+            };
+            saveData.gameState.tradePartners = Array.from(gameState.tradePartners);
+            localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+        }
+
+        function resumeGame() {
+            const savedData = localStorage.getItem(SAVE_KEY);
+            if(savedData) {
+                const parsed = JSON.parse(savedData);
+                gameState = parsed.gameState;
+                gameState.tradePartners = new Set(parsed.gameState.tradePartners);
+                marketProducts = parsed.marketProducts;
+                
+                if (!gameState.countryFluctuations) generateYearlyEvents();
+
+                document.getElementById('playerNameInput').value = gameState.playerName;
+                launchUI();
+            }
+        }
+
+        function clearSaveAndRestart() {
+            if(confirm("Tens a certeza que queres apagar o progresso e recomeçar do zero?")) {
+                localStorage.removeItem(SAVE_KEY);
+                location.reload();
+            }
+        }
+
+        function startGame() {
+            const nameInput = document.getElementById('playerNameInput').value.trim();
+            if(!nameInput) { alert("Tens de assinar a tomada de posse (inserir o nome)!"); return; }
+            
+            localStorage.removeItem(SAVE_KEY);
+            gameState.playerName = nameInput;
+            
+            generateYearlyEvents(); 
+            launchUI();
+        }
+
+        function launchUI() {
+            document.getElementById('playerNameDisplay').innerText = gameState.playerName;
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('mainHeader').classList.remove('hidden');
+            document.getElementById('mainHeader').classList.add('flex');
+            document.getElementById('mainContent').classList.remove('hidden');
+            document.getElementById('mainContent').classList.add('grid');
+            
+            updateNeeds(); 
+            saveTurnSnapshot();
+            renderUI();
+        }
+
+        // ==========================================
+        // 4. LÓGICA DO JOGO
+        // ==========================================
+
+        function sendDataToProfessor() {
+            if (!GOOGLE_SHEETS_URL || GOOGLE_SHEETS_URL.includes("COLA_AQUI")) return;
+            document.getElementById('syncStatus').classList.remove('hidden');
+
+            const payload = {
+                nome: gameState.playerName, ano: gameState.year, xp: gameState.xp,
+                bemEstar: Math.round(gameState.health) + "%", divida: "€ " + formatMoney(gameState.debt),
+                saldo: "€ " + formatMoney(gameState.currentExports - gameState.currentImports + gameState.capitalFunds)
+            };
+
+            fetch(GOOGLE_SHEETS_URL, {
+                method: 'POST', 
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload)
+            }).then(response => console.log("Gravado no Excel"))
+              .catch(e => console.log("Sem conexão à net"));
+        }
+
+        function saveTurnSnapshot() {
+            turnSnapshot = { gameState: JSON.parse(JSON.stringify(gameState)), marketProducts: JSON.parse(JSON.stringify(marketProducts)) };
+            turnSnapshot.gameState.tradePartners = Array.from(gameState.tradePartners);
+        }
+
+        function resetTurn() {
+            if (!turnSnapshot) return;
+            if(!confirm("Desfazer compras/vendas deste ano?")) return;
+            Object.assign(gameState, JSON.parse(JSON.stringify(turnSnapshot.gameState)));
+            gameState.tradePartners = new Set(turnSnapshot.gameState.tradePartners);
+            marketProducts = JSON.parse(JSON.stringify(turnSnapshot.marketProducts));
+            renderUI();
+        }
+
+        function updateNeeds() {
+            const m = 1 + (gameState.year * 0.15);
+            gameState.needs = { 
+                'Alimentação': Math.floor(50 * m), 
+                'Energia': Math.floor(20 * m), 
+                'Manufaturados': Math.floor(10 * m),
+                'Tecnologia': Math.floor(5 * m)
+            };
+
+            if (gameState.currentEvent && gameState.currentEvent.type === 'need') {
+                const alvo = gameState.currentEvent.need;
+                gameState.needs[alvo] = Math.floor(gameState.needs[alvo] * gameState.currentEvent.mult);
+            }
+        }
+
+        function renderUI() {
+            document.getElementById('yearDisplay').innerText = gameState.year;
+            document.getElementById('moneyDisplay').innerText = `€ ${formatMoney(gameState.money)}`;
+            
+            const saldoCorrente = gameState.currentExports - gameState.currentImports;
+            const saldoGlobal = saldoCorrente + gameState.capitalFunds;
+            
+            document.getElementById('deficitDisplay').innerText = ((saldoGlobal / gameState.gdp) * 100).toFixed(1) + "%";
+            document.getElementById('debtDisplay').innerText = ((gameState.debt / gameState.gdp) * 100).toFixed(1) + "%";
+            
+            document.getElementById('healthBar').style.width = gameState.health + "%";
+            document.getElementById('healthValue').innerText = Math.round(gameState.health) + "%";
+            document.getElementById('xpDisplay').innerText = gameState.xp;
+
+            document.getElementById('exportVal').innerText = `+ €${formatMoney(gameState.currentExports)}`;
+            document.getElementById('importVal').innerText = `- €${formatMoney(gameState.currentImports)}`;
+            document.getElementById('currentBalanceVal').innerText = `${saldoCorrente >= 0 ? '+' : ''}€${formatMoney(saldoCorrente)}`;
+            document.getElementById('currentBalanceVal').className = saldoCorrente >= 0 ? "text-green-400 font-bold" : "text-red-400 font-bold";
+
+            let taxaCob = 0;
+            if (gameState.currentImports > 0) taxaCob = (gameState.currentExports / gameState.currentImports) * 100;
+            else if (gameState.currentExports > 0) taxaCob = 100;
+            
+            const covEl = document.getElementById('coverageRate');
+            covEl.innerText = taxaCob.toFixed(1) + "%";
+            covEl.className = `text-xl font-bold ${taxaCob >= 100 ? 'text-green-400' : (taxaCob > 50 ? 'text-yellow-400' : 'text-red-400')}`;
+
+            const evtCard = document.getElementById('eventWarningCard');
+            if (gameState.currentEvent) {
+                evtCard.innerHTML = `
+                    <h3 class="text-xs font-bold ${gameState.currentEvent.type === 'none' ? 'text-green-400' : 'text-yellow-400'} uppercase mb-1">
+                        <i class="fa-solid fa-newspaper"></i> Manchete do Ano: ${gameState.currentEvent.t}
+                    </h3>
+                    <p class="text-xs text-slate-300 font-medium">${gameState.currentEvent.d}</p>
+                `;
+            }
+
+            // NOVA RENDERIZAÇÃO DOS BOTÕES DE INDÚSTRIA COM INFO DO BOOST
+            const indContainer = document.getElementById('industryContainer');
+            indContainer.innerHTML = ''; // Limpa antes de redesenhar
+
+            ['Alimentação', 'Energia', 'Manufaturados', 'Tecnologia'].forEach(type => {
+                const inv = gameState.industries.find(i => i.type === type);
+                const config = infoInd[type];
+                
+                let btnClasses = "w-full p-2 rounded text-left border transition-all text-xs ";
+                let innerHTML = "";
+
+                if(inv) {
+                    btnClasses += "bg-slate-800 cursor-not-allowed opacity-80 border-green-600";
+                    if (gameState.year >= inv.startYear) {
+                        innerHTML = `<div class="flex justify-between font-bold text-green-400">
+                                        <span>Setor ${type} <span class="text-[9px] text-slate-400 block font-normal"><i class="fa-solid fa-bolt"></i> Consome ${config.consome} para Boost</span></span>
+                                        <span><i class="fa-solid fa-check"></i> A Produzir</span>
+                                     </div>`;
+                    } else {
+                        innerHTML = `<div class="flex justify-between font-bold text-yellow-500">
+                                        <span>Setor ${type}</span>
+                                        <span><i class="fa-solid fa-clock"></i> Pronta Ano ${inv.startYear}</span>
+                                     </div>`;
+                    }
+                } else {
+                    btnClasses += "bg-slate-700 hover:bg-slate-600 border-slate-600 cursor-pointer";
+                    innerHTML = `<div class="flex justify-between font-bold text-slate-200">
+                                    <span>Setor ${type} <span class="text-[9px] text-slate-400 block font-normal"><i class="fa-solid fa-bolt"></i> Consome ${config.consome} para Boost</span></span>
+                                    <span class="text-yellow-500">€ ${config.custo.toLocaleString('pt-PT')}M</span>
+                                 </div>`;
+                }
+
+                // Cria o botão dinamicamente para evitar repetição no HTML
+                const btn = document.createElement('button');
+                btn.className = btnClasses;
+                btn.innerHTML = innerHTML;
+                if (!inv) btn.onclick = () => investIndustry(type, config.custo);
+                indContainer.appendChild(btn);
+            });
+
+            renderNeeds(); filterMarket();
+        }
+
+        function renderNeeds() {
+            const c = document.getElementById('needsContainer'); c.innerHTML = '';
+            for (const [cat, needed] of Object.entries(gameState.needs)) {
+                const stock = marketProducts.filter(p => p.category === cat).reduce((sum, p) => sum + p.stock, 0);
+                const perc = Math.min(100, (stock / needed) * 100);
+                c.innerHTML += `<div class="flex justify-between mb-1"><span class="text-slate-300 font-bold">${cat}</span><span class="${stock >= needed ? 'text-green-400' : 'text-red-400'} font-mono">${stock} / ${needed}</span></div>
+                                <div class="w-full bg-slate-700 h-1.5 rounded-full"><div class="${stock >= needed ? 'bg-green-500' : 'bg-red-500'} h-1.5 rounded-full" style="width: ${perc}%"></div></div>`;
+            }
+        }
+
+        function filterMarket() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const catF = document.getElementById('categoryFilter').value;
+            const tbody = document.getElementById('marketTableBody'); tbody.innerHTML = '';
+            
+            const event = gameState.currentEvent || { type: 'none' };
+
+            marketProducts.forEach(product => {
+                if (catF !== 'all' && product.category !== catF) return;
+                if (search && !product.name.toLowerCase().includes(search)) return;
+
+                const tr = document.createElement('tr'); tr.className = "border-b border-slate-700/50 hover:bg-slate-800/50";
+                
+                let catMod = 1.0;
+                if (event.type === 'cat' && event.cat === product.category) catMod = event.mult;
+
+                const finalBasePrice = Math.round(product.basePrice * (1 + (gameState.year * 0.08)) * catMod); 
+
+                let opts = `<option value="">Escolher País...</option>`;
+                
+                countries.forEach(c => {
+                    let regMod = 1.0;
+                    if (event.type === 'region' && event.reg === c.region) regMod = event.mult;
+
+                    const flut = gameState.countryFluctuations[c.name] || 1.0;
+                    const localBasePrice = finalBasePrice * flut * regMod;
+                    const importPrice = Math.round(localBasePrice * c.tariff * c.dist);
+                    const exportPrice = Math.round(localBasePrice / (c.tariff * c.dist));
+                    
+                    opts += `<option value="${c.name}|${importPrice}|${exportPrice}">${c.name} (Imp: €${importPrice} | Exp: €${exportPrice})</option>`;
+                });
+
+                tr.innerHTML = `
+                    <td class="p-3"><div class="font-bold text-slate-200">${product.name}</div><div class="text-[10px] text-slate-500">${product.category}</div></td>
+                    <td class="p-3 text-center font-mono ${product.stock < 10 ? 'text-red-400' : 'text-slate-300'}">${product.stock}</td>
+                    <td class="p-3 text-right font-mono text-slate-400">€${finalBasePrice} <span class="text-[9px] block text-slate-500">Base</span></td>
+                    <td class="p-3">
+                        <div class="flex items-center gap-1 mb-1">
+                            <select id="partner_${product.id}" class="bg-slate-900 border border-slate-600 text-[10px] rounded p-1 w-full">${opts}</select>
+                        </div>
+                        <div class="flex gap-1 items-center">
+                            <input type="number" id="qtd_${product.id}" value="10" min="1" class="w-12 h-6 bg-slate-900 border border-slate-600 rounded p-1 text-[10px] text-center text-white">
+                            <button onclick="trade(${product.id}, 'buy')" class="flex-1 bg-red-900/50 hover:bg-red-700 text-red-100 text-[10px] py-1 rounded border border-red-800">Imp</button>
+                            <button onclick="trade(${product.id}, 'sell')" class="flex-1 bg-green-900/50 hover:bg-green-700 text-green-100 text-[10px] py-1 rounded border border-green-800">Exp</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function trade(prodId, type) {
+            const sel = document.getElementById(`partner_${prodId}`);
+            const qtd = parseInt(document.getElementById(`qtd_${prodId}`).value);
+            if (!sel.value) { alert("Escolhe o país!"); return; }
+            if (isNaN(qtd) || qtd < 1) { return; }
+            
+            const [cName, importPriceStr, exportPriceStr] = sel.value.split('|');
+            const importPrice = parseInt(importPriceStr);
+            const exportPrice = parseInt(exportPriceStr);
+            const p = marketProducts[prodId];
+
+            if (type === 'buy') {
+                if (gameState.money >= importPrice * qtd) {
+                    gameState.money -= importPrice * qtd; 
+                    p.stock += qtd; 
+                    gameState.currentImports += importPrice * qtd;
+                    gameState.tradePartners.add(cName);
+                    renderUI();
+                } else { alert("O Cofre de Estado não tem dinheiro suficiente!"); }
+            } else {
+                if (p.stock >= qtd) {
+                    gameState.money += exportPrice * qtd; 
+                    p.stock -= qtd; 
+                    gameState.currentExports += exportPrice * qtd;
+                    gameState.tradePartners.add(cName);
+                    renderUI(); 
+                } else { alert("Não tens stock nacional suficiente para exportar!"); }
+            }
+        }
+
+        function investIndustry(type, cost) {
+            if (gameState.industries.some(ind => ind.type === type)) {
+                alert(`Já realizaste investimentos no setor de ${type}!`);
+                return;
+            }
+
+            if (gameState.money >= cost) { 
+                gameState.money -= cost; 
+                gameState.industries.push({ type: type, startYear: gameState.year + 2 }); 
+                gameState.xp += 200; 
+                renderUI(); 
+                alert(`Decisão Aprovada: Indústria de ${type} comprada! Vai começar a produzir recursos no Ano ${gameState.year + 2}.`);
+            } else { 
+                alert("Dinheiro insuficiente no Cofre de Estado."); 
+            }
+        }
+
+        function nextYear() {
+            let healthLog = []; let healthPenalty = 0;
+            for (const [cat, needed] of Object.entries(gameState.needs)) {
+                const catProds = marketProducts.filter(p => p.category === cat);
+                let tStock = catProds.reduce((sum, p) => sum + p.stock, 0);
+                let missing = needed - tStock;
+                
+                if (missing > 0) {
+                    let pen = missing <= 5 ? 1 : (missing <= 15 ? 3 : Math.floor(missing / 2));
+                    healthPenalty += pen; healthLog.push(`${cat}: -${pen}%`);
+                    catProds.forEach(p => p.stock = 0);
+                } else {
+                    let toCon = needed;
+                    for (let p of catProds) { if (toCon <= 0) break; let take = Math.min(p.stock, toCon); p.stock -= take; toCon -= take; }
+                }
+            }
+            
+            gameState.health = Math.max(0, Math.min(100, gameState.health - healthPenalty + (healthPenalty === 0 ? 3 : 0)));
+            
+            const saldoCorrente = gameState.currentExports - gameState.currentImports;
+            const saldoGlobal = saldoCorrente + gameState.capitalFunds;
+
+            let financialAction = "";
+            if (saldoGlobal > 0) { 
+                gameState.debt -= saldoGlobal; 
+                gameState.xp += 250; 
+                financialAction = `<span class="text-red-400">Débito Financeiro</span> (Pagámos €${formatMoney(saldoGlobal)} de Dívida)`;
+            } else { 
+                gameState.debt += Math.abs(saldoGlobal); 
+                if((saldoGlobal/gameState.gdp)*100 < -3) gameState.xp -= 200; 
+                financialAction = `<span class="text-green-400">Crédito Financeiro</span> (Novo Empréstimo de €${formatMoney(Math.abs(saldoGlobal))})`;
+            }
+            gameState.debt += gameState.debt * 0.04;
+
+            let bonusDiversidade = gameState.tradePartners.size * 15;
+            gameState.xp += bonusDiversidade;
+
+            document.getElementById('modalYear').innerText = gameState.year;
+            document.getElementById('modalCorrente').innerText = `${saldoCorrente >= 0 ? '+' : ''}€ ${formatMoney(saldoCorrente)}`;
+            document.getElementById('modalCorrente').className = `font-mono ${saldoCorrente >= 0 ? 'text-green-400' : 'text-red-400'}`;
+            
+            document.getElementById('modalBalance').innerText = `${saldoGlobal >= 0 ? 'Superavit de +' : 'Défice de '}€ ${formatMoney(Math.abs(saldoGlobal))}`;
+            document.getElementById('modalBalance').className = `font-mono text-lg ${saldoGlobal >= 0 ? 'text-green-400' : 'text-red-400'}`;
+            
+            document.getElementById('modalFinancialAction').innerHTML = financialAction;
+
+            document.getElementById('modalHealthVar').innerText = `${Math.round(gameState.health)}%`;
+            document.getElementById('modalHealthReason').innerText = healthPenalty === 0 ? 'Povo Satisfeito (+3%)' : healthLog.join(' | ');
+
+            document.getElementById('reportModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            sendDataToProfessor();
+            document.getElementById('reportModal').classList.add('hidden');
+            gameState.year++;
+            
+            if (gameState.year > gameState.maxYears) { 
+                document.getElementById('finalXP').innerText = gameState.xp;
+                document.getElementById('endGameModal').classList.remove('hidden');
+                localStorage.removeItem(SAVE_KEY); 
+                return; 
+            }
+            
+            gameState.money += 500; 
+            gameState.currentExports = 0; 
+            gameState.currentImports = 0; 
+            gameState.tradePartners.clear();
+            gameState.gdp *= 1.02; 
+            
+            // ========================================================
+            // NOVO: SISTEMA DE PRODUÇÃO BASE + BOOST DE MATÉRIAS-PRIMAS
+            // ========================================================
+            let msgProducao = "Resumo da Indústria Nacional este ano:\n\n";
+            let produziuAlgo = false;
+            
+            gameState.industries.forEach(ind => { 
+                if (gameState.year >= ind.startYear) { 
+                    const reqType = infoInd[ind.type].consome;
+                    
+                    let base = 10; // Produção Base mínima garantida
+                    let consumed = 0;
+                    let maxConsume = 15; // Máximo de matérias-primas que a fábrica consegue processar
+                    
+                    // Vai ao stock do Estado procurar o que precisa
+                    let catProds = marketProducts.filter(p => p.category === reqType);
+                    for (let p of catProds) {
+                        if (consumed >= maxConsume) break;
+                        let take = Math.min(p.stock, maxConsume - consumed);
+                        p.stock -= take; // Retira do stock
+                        consumed += take; // Conta como consumido
+                    }
+
+                    // A produção total é a base + o que conseguiu consumir
+                    let total = base + consumed;
+                    
+                    // Entrega os produtos feitos ao Estado
+                    marketProducts.filter(p => p.category === ind.type).forEach(p => p.stock += total); 
+                    
+                    msgProducao += `- Setor de ${ind.type}: +${total} un. de cada produto (Base: 10 | Boost por usar ${reqType}: +${consumed})\n`;
+                    produziuAlgo = true;
+                } 
+            });
+
+            if (produziuAlgo) alert(msgProducao); 
+
+            generateYearlyEvents(); 
+            updateNeeds();
+            saveGame(); 
+            saveTurnSnapshot(); 
+            renderUI();
+        }
+
+        function formatMoney(val) { return Math.abs(val).toLocaleString('pt-PT') + "M"; }
+    </script>
+</body>
+</html>

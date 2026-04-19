@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    font-size: 112%;
+  }
+
+  body {
+    @apply font-sans leading-duobody antialiased text-watty-ink;
+    margin: 0;
+    max-width: 100%;
+    overflow-x: clip;
+    background-color: #ffffff;
+    min-height: 100%;
+  }
+
+  h1,
+  h2 {
+    @apply tracking-feather;
+    line-height: 1.08;
+  }
+}

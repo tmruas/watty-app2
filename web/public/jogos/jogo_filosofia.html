@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WATTY - Feed das Falácias</title>
+    <style>
+        :root {
+            /* Paleta Dark Mode WATTY */
+            --bg-dark: #0D0814;
+            --app-dark: #1A1025;
+            --post-bg: #26183A;
+            --purple-main: #9B5DE5;
+            --purple-neon: #B57EDC;
+            --magenta: #F15BB5;
+            --white: #FFFFFF;
+            --text-light: #E0D7F0;
+            --success: #00E676;
+            --error: #FF3366;
+            --tag-red: #E63946;
+        }
+
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; touch-action: manipulation; }
+
+        body {
+            background-color: var(--bg-dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 10px;
+            color: var(--white);
+            overflow: hidden;
+        }
+
+        .app-container {
+            background: var(--app-dark);
+            width: 100%;
+            max-width: 450px;
+            height: 95vh;
+            max-height: 850px;
+            border-radius: 30px;
+            padding: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 0 0 2px rgba(155, 93, 229, 0.3);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Top Bar */
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .level-badge { background: var(--purple-main); color: white; padding: 5px 15px; border-radius: 15px; font-weight: bold; font-size: 13px; text-transform: uppercase; box-shadow: 0 0 10px rgba(155, 93, 229, 0.5); }
+        .xp-container { flex-grow: 1; margin: 0 15px; height: 10px; background: rgba(255,255,255,0.1); border-radius: 5px; overflow: hidden; }
+        .xp-bar { height: 100%; background: linear-gradient(90deg, var(--magenta), var(--purple-main)); width: 0%; transition: width 0.5s ease; }
+
+        /* Watty Box (Dark Mode) */
+        .watty-box { display: flex; align-items: center; gap: 15px; background: rgba(155, 93, 229, 0.1); padding: 12px 15px; border-radius: 20px; margin-bottom: 15px; border: 1px solid var(--purple-main); transition: all 0.3s ease; }
+        .watty-box.error-state { border-color: var(--error); background: rgba(255, 51, 102, 0.1); }
+        .watty-box.success-state { border-color: var(--success); background: rgba(0, 230, 118, 0.1); }
+        .watty-avatar { width: 45px; height: 45px; background: var(--purple-main); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 22px; flex-shrink: 0; box-shadow: 0 0 15px rgba(155, 93, 229, 0.6); }
+        .watty-speech { font-size: 12px; font-weight: 500; line-height: 1.3; color: var(--text-light); }
+
+        /* Área do Post (O Alvo) */
+        .feed-area { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; perspective: 1000px; z-index: 10; margin-bottom: 15px;}
+        
+        .social-post {
+            width: 100%;
+            background: var(--post-bg);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.05);
+            position: relative;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+            overflow: hidden;
+        }
+
+        .social-post.drag-over {
+            transform: scale(1.02);
+            border-color: var(--magenta);
+            box-shadow: 0 0 20px rgba(241, 91, 181, 0.4);
+        }
+
+        .post-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; }
+        .post-avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 18px; color: white; background: linear-gradient(45deg, #FF6B6B, #4ECDC4); }
+        .post-handle { font-weight: 800; font-size: 15px; letter-spacing: 0.5px; }
+        .post-time { color: #888; font-size: 12px; font-weight: normal; }
+
+        .post-content { font-size: 16px; line-height: 1.5; margin-bottom: 20px; color: var(--text-light); }
+        .post-hashtag { color: var(--magenta); font-weight: bold; }
+
+        /* Viral Meter */
+        .post-footer { display: flex; justify-content: flex-start; gap: 20px; font-weight: 900; font-size: 14px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; }
+        .stat-item { display: flex; align-items: center; gap: 8px; transition: color 0.2s; }
+        .stat-icon { font-size: 18px; }
+        .likes-count.danger { color: var(--error); animation: pulseDanger 0.5s infinite; }
+
+        @keyframes pulseDanger { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); text-shadow: 0 0 10px var(--error); } }
+
+        /* Carimbo de Falácia */
+        .stamp {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(3) rotate(-15deg);
+            color: var(--error);
+            border: 4px solid var(--error);
+            padding: 10px 20px;
+            font-size: 24px;
+            font-weight: 900;
+            border-radius: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0;
+            pointer-events: none;
+            box-shadow: inset 0 0 10px rgba(255, 51, 102, 0.5), 0 0 15px rgba(255, 51, 102, 0.5);
+            text-shadow: 0 0 5px rgba(255, 51, 102, 0.8);
+            background: rgba(13, 8, 20, 0.8);
+            z-index: 20;
+        }
+
+        .stamp.show { animation: stampDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes stampDown {
+            0% { transform: translate(-50%, -50%) scale(3) rotate(-15deg); opacity: 0; }
+            100% { transform: translate(-50%, -50%) scale(1) rotate(-15deg); opacity: 1; }
+        }
+
+        /* Tags de Community Notes */
+        .tags-pool {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            max-height: 180px;
+            overflow-y: auto;
+        }
+
+        .fallacy-tag {
+            background: var(--tag-red);
+            color: white;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 900;
+            cursor: grab;
+            box-shadow: 0 4px 10px rgba(230, 57, 70, 0.4);
+            user-select: none;
+            text-transform: uppercase;
+            transition: transform 0.1s, box-shadow 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .fallacy-tag:active { cursor: grabbing; transform: scale(0.95); }
+        .fallacy-tag.selected { border-color: var(--white); transform: scale(1.05) translateY(-5px); box-shadow: 0 8px 15px rgba(230, 57, 70, 0.6); }
+
+        /* Modal Overlay */
+        .modal-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(13, 8, 20, 0.95); border-radius: 26px; z-index: 100; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: white; padding: 30px;}
+        
+        .btn-primary { width: 100%; padding: 15px; border: none; border-radius: 20px; background: linear-gradient(45deg, var(--purple-main), var(--magenta)); color: white; font-size: 15px; font-weight: bold; cursor: pointer; box-shadow: 0 10px 20px rgba(155, 93, 229, 0.3); transition: transform 0.2s; margin-top: 20px; }
+        .btn-primary:active { transform: scale(0.97); }
+
+        .rank-title { color: var(--magenta); font-size: 24px; font-weight: 900; margin: 15px 0; text-transform: uppercase;}
+
+        .shake { animation: shake 0.4s; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 50% { transform: translateX(8px); } 75% { transform: translateX(-8px); } }
+
+        /* Custom Scrollbar for tags pool */
+        .tags-pool::-webkit-scrollbar { width: 6px; }
+        .tags-pool::-webkit-scrollbar-thumb { background: var(--purple-main); border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="app-container" id="gameWindow">
+    
+    <div class="top-bar">
+        <div class="level-badge">LÓGICA</div>
+        <div class="xp-container"><div class="xp-bar" id="ui-xp-bar"></div></div>
+        <div style="font-weight: bold; font-size: 12px; color: var(--purple-neon);"><span id="ui-score">0</span> / 5 Bloqueios</div>
+    </div>
+
+    <div class="watty-box" id="watty-container">
+        <div class="watty-avatar">🛡️</div>
+        <div class="watty-speech" id="watty-text">O Tribunal da Lógica! Impede que estes posts virem virais adicionando a "Community Note" correta.</div>
+    </div>
+
+    <div class="feed-area">
+        <div class="social-post" id="post-target" ondrop="drop(event)" ondragover="allowDrop(event)" onclick="dropMobile()">
+            <div class="post-header">
+                <div class="post-avatar" id="post-avatar">M</div>
+                <div>
+                    <div class="post-handle" id="post-handle">@Miguel_Gamer</div>
+                    <div class="post-time">Há 2 minutos</div>
+                </div>
+            </div>
+            
+            <div class="post-content" id="post-text">
+                A carregar post...
+            </div>
+
+            <div class="post-footer">
+                <div class="stat-item">
+                    <span class="stat-icon">❤️</span> 
+                    <span class="likes-count" id="likes-counter">0</span>
+                </div>
+                <div class="stat-item" style="color: #888;">
+                    <span class="stat-icon">🔁</span> 
+                    <span id="rt-counter">0</span>
+                </div>
+            </div>
+
+            <div class="stamp" id="stamp">FALÁCIA DETETADA</div>
+        </div>
+    </div>
+
+    <div style="text-align: center; color: var(--text-light); font-size: 12px; margin-bottom: 8px; font-weight: bold; text-transform: uppercase;">Aplica a Etiqueta de Falácia:</div>
+    
+    <div class="tags-pool" id="tags-pool">
+        </div>
+
+    <div class="modal-overlay" id="modal-end">
+        <div style="font-size: 60px; margin-bottom: 5px;" id="modal-icon">🏆</div>
+        <h2>ANÁLISE CONCLUÍDA</h2>
+        <p>Falácias Bloqueadas: <span id="final-score" style="font-weight: bold; color: var(--success);">0</span>/5</p>
+        <div class="rank-title" id="final-rank">Troll de Internet</div>
+        <button class="btn-primary" onclick="initGame()">NOVA SESSÃO (BARALHAR)</button>
+    </div>
+</div>
+
+<script>
+    // ---------------------------------------------------------
+    // BASE DE DADOS COMPLETA (8 Etiquetas, 30+ Posts)
+    // ---------------------------------------------------------
+    const tagsList = [
+        { id: "ad_hominem", label: "Ad Hominem" },
+        { id: "falso_dilema", label: "Falso Dilema" },
+        { id: "boneco_palha", label: "Boneco de Palha" },
+        { id: "bola_neve", label: "Derrapagem (Neve)" },
+        { id: "ignorancia", label: "Apelo à Ignorância" },
+        { id: "falsa_causa", label: "Falsa Causa" },
+        { id: "peticao_principio", label: "Petição de Princípio" },
+        { id: "ad_populum", label: "Apelo à Maioria" }
+    ];
+
+    const allPostsData = [
+        // --- AD HOMINEM ---
+        { id: "ad_hominem", avatar: "M", handle: "@Miguel_Gamer", color: "linear-gradient(45deg, #FF6B6B, #4ECDC4)", text: "A Joana diz que a cantina devia ter opções vegetarianas, mas ela ouve K-Pop o dia todo, logo a opinião dela não conta. 🙄", errorFeedback: "O Miguel atacou os gostos musicais da Joana em vez de refutar o argumento sobre a cantina." },
+        { id: "ad_hominem", avatar: "T", handle: "@Tuga_Trol", color: "linear-gradient(45deg, #8A2BE2, #4B0082)", text: "O delegado de turma quer mudar a data do teste, mas ele reprovou a Físico-Química no ano passado, por isso a ideia dele é péssima. 📉", errorFeedback: "Atacar o passado académico de alguém não invalida a proposta atual que a pessoa está a fazer." },
+        { id: "ad_hominem", avatar: "L", handle: "@Lucas123", color: "linear-gradient(45deg, #FF4500, #FF8C00)", text: "Como podes defender que devemos andar de transportes públicos pelo clima, se tu andas sempre de carro desportivo? 🚗💨", errorFeedback: "Falácia do 'Tu Quoque' (Tu também). A hipocrisia de uma pessoa não torna o seu argumento logicamente falso." },
+        { id: "ad_hominem", avatar: "C", handle: "@CrisEco", color: "linear-gradient(45deg, #2E8B57, #3CB371)", text: "Não acredites na análise do novo ministro da economia. Ele veste-se super mal e tem o cabelo sempre despenteado. 👔❌", errorFeedback: "A aparência física ou a forma de vestir não têm qualquer relação lógica com a competência económica." },
+        { id: "ad_hominem", avatar: "J", handle: "@Joao_Politica", color: "linear-gradient(45deg, #4682B4, #5F9EA0)", text: "O deputado disse que a criminalidade desceu, mas ele é do partido rival, logo está obviamente a mentir. 🤥", errorFeedback: "Descartar um argumento apenas com base na filiação política ou intenções da pessoa é um ataque Ad Hominem." },
+
+        // --- FALSO DILEMA ---
+        { id: "falso_dilema", avatar: "Z", handle: "@Zepa_19", color: "linear-gradient(45deg, #FFA07A, #FF6347)", text: "Ou banimos os telemóveis completamente da escola, ou os alunos nunca mais vão aprender nada na vida. Vocês escolhem. 📱🚫", errorFeedback: "Existem alternativas intermédias, como o uso condicionado ou pedagógico dos telemóveis." },
+        { id: "falso_dilema", avatar: "B", handle: "@Bia_Rebelde", color: "linear-gradient(45deg, #C71585, #DB7093)", text: "Ou me deixas ir à festa de passagem de ano, ou a minha vida social acaba para sempre! 😭🎉", errorFeedback: "A Bia está a apresentar apenas duas opções extremas, ignorando que a vida social sobrevive a uma festa perdida." },
+        { id: "falso_dilema", avatar: "R", handle: "@Rui_Boss", color: "linear-gradient(45deg, #B8860B, #DAA520)", text: "Nestas eleições, ou votam no meu partido para salvar o país, ou votam neles e destroem a nação inteira. 🗳️🔥", errorFeedback: "Reduzir o panorama político a 'Nós (Salvadores) vs Eles (Destruidores)' é um Falso Dilema clássico." },
+        { id: "falso_dilema", avatar: "A", handle: "@Ana_Estudos", color: "linear-gradient(45deg, #008080, #20B2AA)", text: "Ou tiras notas excelentes e vais para Medicina, ou vais acabar a pedir dinheiro na rua. Não brinques com o teu futuro. 🩺🏚️", errorFeedback: "Ignora completamente milhares de outras profissões e percursos de vida válidos." },
+        { id: "falso_dilema", avatar: "V", handle: "@Veggie_PT", color: "linear-gradient(45deg, #32CD32, #00FF00)", text: "Ou és 100% vegan e não usas nada de origem animal, ou odeias ativamente a natureza. Não há cá meios termos. 🌱😡", errorFeedback: "Força o leitor a escolher entre dois extremos absolutos, ignorando opções intermédias." },
+
+        // --- BONECO DE PALHA ---
+        { id: "boneco_palha", avatar: "S", handle: "@SofiaEco", color: "linear-gradient(45deg, #98FB98, #3CB371)", text: "O governo quer fazer ciclovias. Obviamente, eles querem obrigar toda a gente a andar à chuva e destruir a indústria automóvel! 🚲📉", errorFeedback: "A Sofia exagerou absurdamente a ideia de fazer ciclovias para que fosse mais fácil de atacar." },
+        { id: "boneco_palha", avatar: "P", handle: "@Pedro_Prof", color: "linear-gradient(45deg, #8B4513, #A0522D)", text: "A Rita disse que devíamos dar menos trabalhos de casa. Claramente, ela quer que os alunos fiquem todos burros e preguiçosos! 📚💤", errorFeedback: "A Rita queria reduzir os TPC, não acabar com a inteligência dos alunos. O argumento original foi distorcido." },
+        { id: "boneco_palha", avatar: "M", handle: "@Maria_Defesa", color: "linear-gradient(45deg, #708090, #778899)", text: "Sugeres cortar 5% no orçamento militar? Estás basicamente a pedir para abrirmos as fronteiras e sermos invadidos amanhã! 🪖🏳️", errorFeedback: "Cria uma versão caricata e extrema da posição do adversário e ataca essa versão." },
+        { id: "boneco_palha", avatar: "F", handle: "@Filipe_Direitos", color: "linear-gradient(45deg, #4B0082, #800080)", text: "Defendes o ensino superior tendencialmente gratuito? É pena que sejas um estalinista que quer acabar com a economia. 🏛️💸", errorFeedback: "Distorce a defesa do acesso à educação como se fosse a defesa de uma ditadura." },
+        { id: "boneco_palha", avatar: "L", handle: "@Laura_Nutri", color: "linear-gradient(45deg, #FF69B4, #FF1493)", text: "O Ministério aconselha a reduzir o açúcar. Querem proibir-nos de comer e obrigar-nos a viver só de alface e água destilada! 🥦💧", errorFeedback: "Transforma uma recomendação de saúde moderada numa ditadura alimentar irreal." },
+
+        // --- DERRAPAGEM (Bola de Neve) ---
+        { id: "bola_neve", avatar: "P", handle: "@Prof_Rigor", color: "linear-gradient(45deg, #B0C4DE, #4682B4)", text: "Se usarmos calculadoras no 7º ano, a seguir não sabem a tabuada, esquecem-se de ler, e a civilização colapsa! 📉🤯", errorFeedback: "Assume uma cadeia de consequências catastróficas sem nexo causal provado." },
+        { id: "bola_neve", avatar: "M", handle: "@Mae_Preocupada", color: "linear-gradient(45deg, #FFB6C1, #FFC0CB)", text: "Se te deixo chegar meia hora mais tarde hoje, amanhã queres chegar de madrugada, e para a semana acabas no mundo do crime! 🕰️🚓", errorFeedback: "O salto lógico de 'chegar tarde' para 'mundo do crime' é uma derrapagem absurda." },
+        { id: "bola_neve", avatar: "T", handle: "@Tech_Bro", color: "linear-gradient(45deg, #00CED1, #48D1CC)", text: "Não podemos aceitar IA nas escolas. Primeiro fazem os trabalhos, depois substituem professores e no fim dominam o planeta. 🤖🌍", errorFeedback: "Cria um cenário apocalíptico a partir de uma premissa simples." },
+        { id: "bola_neve", avatar: "D", handle: "@Diogo_Gym", color: "linear-gradient(45deg, #FF8C00, #FFA500)", text: "Se comeres essa fatia de bolo, vais engordar, desmotivar, ficar obeso e ter um ataque cardíaco aos 30 anos. 🍰💔", errorFeedback: "Uma fatia de bolo não leva inexoravelmente a um ataque cardíaco." },
+        { id: "bola_neve", avatar: "N", handle: "@Nuno_Estudante", color: "linear-gradient(45deg, #6495ED, #4169E1)", text: "Se falhares este teste, chumbas, não entras na faculdade, não arranjas emprego e serás miserável para sempre. 📝🗑️", errorFeedback: "Dramatiza as consequências de um único evento como incontroláveis." },
+
+        // --- APELO À IGNORÂNCIA ---
+        { id: "ignorancia", avatar: "A", handle: "@Alien_Hunter_PT", color: "linear-gradient(45deg, #DDA0DD, #8A2BE2)", text: "A ciência nunca provou que extraterrestres NÃO construíram as pirâmides, por isso é óbvio que foram eles. 👽🛸", errorFeedback: "A falta de provas da falsidade de algo não o torna verdadeiro." },
+        { id: "ignorancia", avatar: "G", handle: "@Ghost_Buster", color: "linear-gradient(45deg, #696969, #808080)", text: "Nunca provaram que fantasmas não existem, logo, os espíritos andam mesmo por aí à noite. 👻🏚️", errorFeedback: "O ónus da prova cabe a quem afirma a existência, não o contrário." },
+        { id: "ignorancia", avatar: "C", handle: "@Ceu_Estrelado", color: "linear-gradient(45deg, #191970, #000080)", text: "Não temos como provar que não há um bule de chá a orbitar Marte, por isso é uma possibilidade real. ☕🪐", errorFeedback: "A impossibilidade de refutar uma afirmação absurda não lhe dá validade." },
+        { id: "ignorancia", avatar: "X", handle: "@Mito_X", color: "linear-gradient(45deg, #556B2F, #8FBC8F)", text: "O réu deve ser culpado. Ele não conseguiu provar com 100% de certeza que esteve em casa a dormir sozinho. ⚖️❌", errorFeedback: "Na lógica (e no direito), presume-se a inocência. A falta de um álibi blindado não prova culpa." },
+        { id: "ignorancia", avatar: "L", handle: "@Lenda_Urbana", color: "linear-gradient(45deg, #8B0000, #B22222)", text: "Ninguém provou que o monstro de Loch Ness é mentira, logo a criatura tem de existir nas profundezas! 🦕🌊", errorFeedback: "Apegar-se à ausência de refutação como prova de verdade é ignorância lógica." },
+
+        // --- FALSA CAUSA ---
+        { id: "falsa_causa", avatar: "F", handle: "@Fut_Maniaco", color: "linear-gradient(45deg, #DC143C, #B22222)", text: "Sempre que uso as minhas meias da sorte ganhamos. Ontem não as usei e perdemos. A culpa foi totalmente minha! 🧦⚽", errorFeedback: "A sucessão no tempo não significa que uma coisa causou a outra." },
+        { id: "falsa_causa", avatar: "V", handle: "@Vera_Estat", color: "linear-gradient(45deg, #00FA9A, #00FF7F)", text: "No verão vendem-se mais gelados e os ataques de tubarão aumentam. O consumo de gelados atrai tubarões! 🍦🦈", errorFeedback: "Falácia de confusão entre correlação (ambos acontecem no verão) e causalidade." },
+        { id: "falsa_causa", avatar: "H", handle: "@Helena_Curas", color: "linear-gradient(45deg, #D2B48C, #DEB887)", text: "Bebi um chá de ervas ontem e hoje a minha constipação desapareceu. Aquele chá é um milagre! 🍵✨", errorFeedback: "O corpo humano cura gripes naturalmente. O chá foi apenas uma coincidência temporal." },
+
+        // --- PETIÇÃO DE PRINCÍPIO ---
+        { id: "peticao_principio", avatar: "R", handle: "@Rui_F", color: "linear-gradient(45deg, #FFD700, #DAA520)", text: "O meu clube é inegavelmente o melhor, porque nenhuma outra equipa é tão boa como a nossa. 🏆⚽", errorFeedback: "Usa a própria conclusão como premissa. É um raciocínio circular." },
+        { id: "peticao_principio", avatar: "J", handle: "@Jornal_Top", color: "linear-gradient(45deg, #A9A9A9, #808080)", text: "Tudo o que o nosso site publica é 100% verdadeiro. Como sabemos? Porque está escrito na nossa bio. 📰✅", errorFeedback: "Tentar provar a veracidade de uma fonte usando a própria fonte como prova." },
+
+        // --- APELO À MAIORIA (Ad Populum) ---
+        { id: "ad_populum", avatar: "T", handle: "@Tiago_Trend", color: "linear-gradient(45deg, #00FFFF, #00BFFF)", text: "Toda a gente na escola está a jogar isto, por isso tem de ser o melhor jogo do ano! 📱🎮", errorFeedback: "O facto de algo ser muito popular não significa que seja objetivamente bom ou verdadeiro." },
+        { id: "ad_populum", avatar: "M", handle: "@Marta_Astros", color: "linear-gradient(45deg, #9370DB, #8A2BE2)", text: "Milhões de pessoas leem o horóscopo. Logo, a astrologia tem de ter um fundo científico. ♈🔮", errorFeedback: "A crença das massas não substitui as provas metodológicas ou científicas." }
+    ];
+
+    // DEFINIÇÃO DA SESSÃO
+    const ROUNDS_PER_GAME = 5;
+    let playQueue = [];
+    let currentPostIndex = 0;
+    let score = 0;
+    
+    // Viral Meter Variables
+    let likes = 0;
+    let retweets = 0;
+    let viralInterval;
+    let isRoundActive = false;
+    const VIRAL_LIMIT = 15000;
+
+    // UI Elements
+    const postAvatar = document.getElementById('post-avatar');
+    const postHandle = document.getElementById('post-handle');
+    const postText = document.getElementById('post-text');
+    const likesCounter = document.getElementById('likes-counter');
+    const rtCounter = document.getElementById('rt-counter');
+    const stamp = document.getElementById('stamp');
+    const wattyContainer = document.getElementById('watty-container');
+    const wattyText = document.getElementById('watty-text');
+    const postTarget = document.getElementById('post-target');
+    const tagsPool = document.getElementById('tags-pool');
+
+    function initGame() {
+        document.getElementById('modal-end').style.display = 'none';
+        
+        // Setup Tags UI (Sempre baralhadas)
+        tagsPool.innerHTML = '';
+        let shuffledTags = [...tagsList].sort(() => Math.random() - 0.5);
+        shuffledTags.forEach(tag => {
+            const btn = document.createElement('div');
+            btn.className = 'fallacy-tag';
+            btn.id = tag.id;
+            btn.innerText = tag.label;
+            btn.draggable = true;
+            btn.ondragstart = drag;
+            btn.onclick = () => selectTagMobile(btn);
+            tagsPool.appendChild(btn);
+        });
+
+        // Setup Posts Queue (Garante apenas 5 posts por sessão)
+        let shuffledPosts = [...allPostsData].sort(() => Math.random() - 0.5);
+        playQueue = shuffledPosts.slice(0, ROUNDS_PER_GAME);
+        
+        currentPostIndex = 0;
+        score = 0;
+        document.getElementById('ui-score').innerText = score;
+        document.getElementById('ui-xp-bar').style.width = "0%";
+
+        loadPost();
+    }
+
+    function loadPost() {
+        // Se já passaram os 5 posts, termina o jogo
+        if (currentPostIndex >= playQueue.length) {
+            endGame(); 
+            return;
+        }
+
+        const data = playQueue[currentPostIndex];
+        
+        // Reset UI do Post
+        stamp.classList.remove('show');
+        stamp.style.color = 'var(--error)';
+        stamp.style.borderColor = 'var(--error)';
+        stamp.innerText = "FALÁCIA DETETADA";
+        postTarget.style.opacity = '1';
+        postTarget.style.transform = 'scale(1)';
+        wattyContainer.className = 'watty-box';
+        wattyText.innerText = `[Post ${currentPostIndex + 1} de ${ROUNDS_PER_GAME}] Identifica a falácia antes que o post atinja 10.000 likes!`;
+        likesCounter.classList.remove('danger');
+        
+        // Preencher Dados do Post
+        postAvatar.innerText = data.avatar;
+        postAvatar.style.background = data.color;
+        postHandle.innerText = data.handle;
+        postText.innerHTML = data.text;
+
+        // Reset Counters do Viral Meter
+        likes = Math.floor(Math.random() * 50);
+        retweets = Math.floor(likes / 3);
+        updateCounters();
+
+        isRoundActive = true;
+        startViralMeter();
+    }
+
+    function startViralMeter() {
+        clearInterval(viralInterval);
+        viralInterval = setInterval(() => {
+            if(!isRoundActive) return;
+
+            let jump = Math.floor(Math.random() * 150) + 70;
+            if(likes > 7000) jump += 100; // Pânico no final
+
+            likes += jump;
+            retweets += Math.floor(jump * 0.4);
+
+            updateCounters();
+
+            if (likes > 7500) likesCounter.classList.add('danger');
+
+            if (likes >= VIRAL_LIMIT) {
+                likes = VIRAL_LIMIT;
+                updateCounters();
+                postWentViral();
+            }
+        }, 100);
+    }
+
+    function updateCounters() {
+        likesCounter.innerText = likes.toLocaleString('pt-PT');
+        rtCounter.innerText = retweets.toLocaleString('pt-PT');
+    }
+
+    // ---------------------------------------------------------
+    // LÓGICA DE VERIFICAÇÃO (Sucesso / Erro / Timeout)
+    // ---------------------------------------------------------
+    function processFallacy(tagId) {
+        if (!isRoundActive) return;
+        
+        const currentData = playQueue[currentPostIndex];
+
+        if (tagId === currentData.id) {
+            // SUCESSO! Acertou na Falácia
+            isRoundActive = false;
+            clearInterval(viralInterval);
+            
+            score++;
+            document.getElementById('ui-score').innerText = score;
+            document.getElementById('ui-xp-bar').style.width = ((currentPostIndex + 1) / ROUNDS_PER_GAME * 100) + "%";
+
+            likes = 0; retweets = 0; updateCounters();
+            likesCounter.classList.remove('danger');
+            
+            stamp.style.color = 'var(--success)';
+            stamp.style.borderColor = 'var(--success)';
+            stamp.innerText = "BLOQUEADO!";
+            stamp.classList.add('show');
+            
+            wattyContainer.className = 'watty-box success-state';
+            wattyText.innerText = "Brilhante! A desinformação foi travada a tempo.";
+            
+            if(navigator.vibrate) navigator.vibrate(100);
+            
+            // Avança para o próximo post após breve pausa
+            setTimeout(nextRound, 2500);
+        } else {
+            // ERRO! Falácia incorreta
+            likes += 2000; 
+            if(likes >= VIRAL_LIMIT) likes = VIRAL_LIMIT - 100; 
+            
+            const win = document.getElementById('gameWindow');
+            win.classList.add('shake');
+            setTimeout(() => win.classList.remove('shake'), 400);
+
+            wattyContainer.className = 'watty-box error-state';
+            wattyText.innerHTML = currentData.errorFeedback;
+            
+            if(navigator.vibrate) navigator.vibrate([100, 50, 100]);
+        }
+    }
+
+    function postWentViral() {
+        isRoundActive = false;
+        clearInterval(viralInterval);
+        
+        stamp.style.color = 'var(--error)';
+        stamp.style.borderColor = 'var(--error)';
+        stamp.innerText = "VIRALIZOU! 💀";
+        stamp.classList.add('show');
+
+        // Atualiza a barra de XP visualmente mas não ganha pontos
+        document.getElementById('ui-xp-bar').style.width = ((currentPostIndex + 1) / ROUNDS_PER_GAME * 100) + "%";
+
+        wattyContainer.className = 'watty-box error-state';
+        wattyText.innerText = `Lento demais! A resposta correta era: ${getLabelFromId(playQueue[currentPostIndex].id)}.`;
+
+        if(navigator.vibrate) navigator.vibrate(500);
+        
+        // Avança para o próximo post mesmo se tiver errado
+        setTimeout(nextRound, 3000);
+    }
+
+    function getLabelFromId(id) {
+        return tagsList.find(t => t.id === id).label;
+    }
+
+    function nextRound() {
+        postTarget.style.opacity = '0';
+        postTarget.style.transform = 'scale(0.9)';
+        setTimeout(() => {
+            currentPostIndex++; // Aqui está a lógica central da progressão
+            loadPost(); // Se index >= 5, esta função dispara o endGame()
+        }, 300);
+    }
+
+    // ---------------------------------------------------------
+    // DRAG & DROP (Desktop)
+    // ---------------------------------------------------------
+    function drag(ev) {
+        if (!isRoundActive) return;
+        ev.dataTransfer.setData("text", ev.target.id);
+    }
+
+    function allowDrop(ev) {
+        ev.preventDefault();
+        if(isRoundActive) postTarget.classList.add('drag-over');
+    }
+
+    function drop(ev) {
+        ev.preventDefault();
+        postTarget.classList.remove('drag-over');
+        if (!isRoundActive) return;
+        const tagId = ev.dataTransfer.getData("text");
+        processFallacy(tagId);
+    }
+
+    postTarget.addEventListener('dragleave', () => postTarget.classList.remove('drag-over'));
+
+    // ---------------------------------------------------------
+    // CLICK/TOUCH (Mobile)
+    // ---------------------------------------------------------
+    let selectedTag = null;
+
+    function selectTagMobile(tagElement) {
+        if (!isRoundActive) return;
+        if (selectedTag) selectedTag.classList.remove('selected');
+        
+        if (selectedTag === tagElement) {
+            selectedTag = null; 
+        } else {
+            selectedTag = tagElement;
+            tagElement.classList.add('selected');
+        }
+    }
+
+    function dropMobile() {
+        if (!isRoundActive || !selectedTag) return;
+        const tagId = selectedTag.id;
+        selectedTag.classList.remove('selected');
+        selectedTag = null;
+        processFallacy(tagId);
+    }
+
+    // ---------------------------------------------------------
+    // FINAL DE JOGO (Ecrã Final após os 5 Posts)
+    // ---------------------------------------------------------
+    function endGame() {
+        document.getElementById('final-score').innerText = score;
+        
+        let rank = ""; let icon = "";
+        if (score <= 1) { rank = "Troll de Internet"; icon = "🧌"; }
+        else if (score === 2) { rank = "Comentador de Bancada"; icon = "🗣️"; }
+        else if (score === 3) { rank = "Detetive da Lógica"; icon = "🕵️‍♂️"; }
+        else if (score === 4) { rank = "Rei/Rainha das 'Notes'"; icon = "👑"; }
+        else { rank = "Aristóteles do Twitter"; icon = "🏛️"; }
+
+        document.getElementById('final-rank').innerText = rank;
+        document.getElementById('modal-icon').innerText = icon;
+        document.getElementById('modal-end').style.display = 'flex';
+    }
+
+    // Arranca
+    initGame();
+</script>
+
+</body>
+</html>

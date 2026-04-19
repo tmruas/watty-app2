@@ -11,3 +11,8 @@ wattyvid2.mp4
 # Login wizard (npm)
 watty_login_wizard/frontend/node_modules/
 watty_login_wizard/frontend/build/
+
+# Next.js (Watty web)
+web/node_modules/
+web/.next/
+web/.env*.local

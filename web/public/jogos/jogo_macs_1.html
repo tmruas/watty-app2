@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Afinador de Quotas - O Desafio dos 100 Níveis</title>
+    <style>
+        :root {
+            --bg: #F3EEFF;
+            --purple-main: #9B5DE5;
+            --purple-dark: #6D3AB5;
+            --lilac: #BE95F2;
+            --magenta: #F15BB5;
+            --white: #FFFFFF;
+            --text: #2D1B4D;
+            --success: #00BB7E;
+            --error: #FF4D4D;
+        }
+
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
+        body {
+            background-color: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            color: var(--text);
+        }
+
+        .app-container {
+            background: var(--white);
+            width: 100%;
+            max-width: 520px;
+            border-radius: 30px;
+            padding: 25px;
+            box-shadow: 0 20px 40px rgba(155, 93, 229, 0.15);
+            border: 4px solid var(--purple-main);
+            position: relative;
+        }
+
+        /* Top Bar: XP e Nível */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .level-badge {
+            background: var(--purple-main);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .xp-container {
+            flex-grow: 1;
+            margin: 0 15px;
+            height: 12px;
+            background: #E0D7F0;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .xp-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--magenta), var(--purple-main));
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        /* Personagem Watty */
+        .watty-box {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: var(--bg);
+            padding: 15px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            border: 2px dashed var(--lilac);
+        }
+
+        .watty-avatar {
+            width: 55px;
+            height: 55px;
+            background: var(--purple-main);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 28px;
+            box-shadow: 0 5px 15px rgba(155, 93, 229, 0.3);
+            flex-shrink: 0;
+        }
+
+        .watty-speech {
+            font-size: 13px;
+            font-weight: 500;
+            line-height: 1.3;
+        }
+
+        /* Área de Jogo */
+        h1 { font-size: 20px; margin: 0 0 5px 0; color: var(--purple-dark); text-align: center; }
+        .mission-text { text-align: center; font-size: 14px; margin-bottom: 15px; opacity: 0.8; }
+
+        .status-header {
+            display: flex;
+            justify-content: space-around;
+            background: #F8F5FF;
+            padding: 10px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .main-counter {
+            font-size: 42px;
+            font-weight: 900;
+            text-align: center;
+            margin: 10px 0;
+            color: var(--text);
+        }
+        .main-counter span { color: var(--purple-main); }
+
+        /* Slider */
+        .slider-section {
+            background: #F8F5FF;
+            padding: 20px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+        }
+
+        input[type=range] {
+            width: 100%;
+            -webkit-appearance: none;
+            background: transparent;
+            margin: 15px 0;
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            height: 8px;
+            background: #D1C4E9;
+            border-radius: 4px;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 28px;
+            width: 28px;
+            background: var(--magenta);
+            border-radius: 50%;
+            cursor: pointer;
+            margin-top: -10px;
+            box-shadow: 0 4px 10px rgba(241, 91, 181, 0.4);
+            border: 3px solid white;
+        }
+
+        /* Lista de Entidades */
+        .entities-list {
+            max-height: 280px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding-right: 5px;
+        }
+
+        .entity-card {
+            background: #FAFAFA;
+            border: 1px solid #EEE;
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 10px;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1.5fr 0.5fr;
+            align-items: center;
+            font-size: 12px;
+            gap: 5px;
+        }
+
+        .card-label { font-weight: bold; color: var(--purple-dark); }
+        .card-exact { color: #888; font-family: monospace; }
+        .card-alloc { font-weight: 900; font-size: 16px; color: var(--purple-main); text-align: right; }
+
+        /* Botão */
+        .btn-primary {
+            width: 100%;
+            padding: 18px;
+            border: none;
+            border-radius: 20px;
+            background: linear-gradient(45deg, var(--purple-main), var(--magenta));
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(155, 93, 229, 0.3);
+            transition: transform 0.2s;
+        }
+
+        .btn-primary:active { transform: scale(0.97); }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(45, 27, 77, 0.96);
+            border-radius: 26px;
+            z-index: 100;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: white;
+            padding: 30px;
+        }
+
+        .shake { animation: shake 0.4s; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            50% { transform: translateX(8px); }
+            75% { transform: translateX(-8px); }
+        }
+
+        .entities-list::-webkit-scrollbar { width: 4px; }
+        .entities-list::-webkit-scrollbar-thumb { background: var(--lilac); border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="app-container" id="gameWindow">
+    <div class="top-bar">
+        <div class="level-badge">NÍVEL <span id="ui-level">1</span></div>
+        <div class="xp-container"><div class="xp-bar" id="ui-xp-bar"></div></div>
+        <div style="font-weight: bold; font-size: 12px; color: var(--purple-main);"><span id="ui-xp">0</span> XP</div>
+    </div>
+
+    <div class="watty-box">
+        <div class="watty-avatar">🤓</div>
+        <div class="watty-speech" id="watty-text">Olá! Sou o Watty. Vamos afinar estas quotas?</div>
+    </div>
+
+    <h1>Jefferson Method</h1>
+    <div class="mission-text" id="mission-desc">Ajusta o divisor para distribuir os recursos.</div>
+
+    <div class="status-header">
+        <span>Instituição</span>
+        <span>Pop.</span>
+        <span>Quota Exata</span>
+        <span>Aloc.</span>
+    </div>
+
+    <div class="main-counter"><span id="ui-current-total">0</span> / <span id="ui-target-total">10</span></div>
+
+    <div class="slider-section">
+        <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; margin-bottom: 5px;">
+            <span>Divisor Modificado (d):</span>
+            <span id="ui-divisor-display" style="color: var(--magenta);">0.0</span>
+        </div>
+        <input type="range" id="divisor-slider" step="0.1">
+    </div>
+
+    <div class="entities-list" id="entities-grid">
+        </div>
+
+    <button class="btn-primary" onclick="checkResult()">SUBMETER RESPOSTA</button>
+
+    <div class="modal-overlay" id="modal-success">
+        <div style="font-size: 60px; margin-bottom: 10px;">🌟</div>
+        <h2 id="modal-title">NÍVEL CONCLUÍDO!</h2>
+        <p id="modal-msg">A distribuição está perfeitamente equilibrada.</p>
+        <button class="btn-primary" style="background: var(--success); margin-top: 20px;" onclick="startNextLevel()">PRÓXIMO NÍVEL ➡️</button>
+    </div>
+</div>
+
+<script>
+    let gameState = {
+        level: 1,
+        xp: 0,
+        entities: [],
+        target: 0,
+        maxXP: 20000 
+    };
+
+    function initLevel(lvl) {
+        // Dificuldade progressiva
+        const numEntities = Math.min(12, 3 + Math.floor((lvl - 1) / 10));
+        const targetResources = 10 + (lvl * 2);
+        gameState.target = targetResources;
+
+        let solvable = false;
+        let attempts = 0;
+        let bestEntities = [];
+        let dMin, dMax, idealD;
+
+        // Loop de Validação: garante que o nível tem solução
+        while (!solvable && attempts < 200) {
+            attempts++;
+            idealD = 20 + Math.random() * 40 + (lvl * 0.5);
+            bestEntities = [];
+            
+            for (let i = 0; i < numEntities; i++) {
+                const q = 1 + Math.floor(Math.random() * (targetResources / numEntities * 1.6));
+                const p = Math.floor(q * idealD + (Math.random() * idealD * 0.7));
+                bestEntities.push({
+                    name: (lvl < 30 ? "Hospital " : "Distrito ") + String.fromCharCode(65 + i),
+                    pop: Math.max(1, p)
+                });
+            }
+
+            dMin = Math.max(5, idealD - 15 - (lvl * 0.2));
+            dMax = idealD + 15 + (lvl * 0.2);
+
+            // Testa se existe solução no intervalo
+            for (let t = dMin; t <= dMax; t += 0.1) {
+                let sum = 0;
+                bestEntities.forEach(e => sum += Math.floor(e.pop / t));
+                if (sum === targetResources) {
+                    solvable = true;
+                    break;
+                }
+            }
+        }
+
+        gameState.entities = bestEntities;
+        
+        // Setup UI
+        document.getElementById('ui-level').innerText = gameState.level;
+        document.getElementById('ui-target-total').innerText = gameState.target;
+        document.getElementById('mission-desc').innerText = `Distribui ${gameState.target} recursos por ${numEntities} instituições.`;
+        
+        const slider = document.getElementById('divisor-slider');
+        slider.min = dMin.toFixed(1);
+        slider.max = dMax.toFixed(1);
+        slider.value = dMax.toFixed(1);
+
+        renderEntities();
+        updateValues();
+    }
+
+    function renderEntities() {
+        const grid = document.getElementById('entities-grid');
+        grid.innerHTML = '';
+        gameState.entities.forEach((ent, i) => {
+            grid.innerHTML += `
+                <div class="entity-card">
+                    <div class="card-label">${ent.name}</div>
+                    <div>${ent.pop}</div>
+                    <div class="card-exact" id="exact-${i}">0.000</div>
+                    <div class="card-alloc" id="alloc-${i}">0</div>
+                </div>
+            `;
+        });
+    }
+
+    function updateValues() {
+        const d = parseFloat(document.getElementById('divisor-slider').value);
+        document.getElementById('ui-divisor-display').innerText = d.toFixed(1);
+        
+        let currentTotal = 0;
+        gameState.entities.forEach((ent, i) => {
+            const exact = ent.pop / d;
+            const alloc = Math.floor(exact);
+            currentTotal += alloc;
+            
+            document.getElementById(`exact-${i}`).innerText = exact.toFixed(3);
+            document.getElementById(`alloc-${i}`).innerText = alloc;
+        });
+
+        document.getElementById('ui-current-total').innerText = currentTotal;
+
+        // Dicas do Watty
+        const watty = document.getElementById('watty-text');
+        if (currentTotal < gameState.target) watty.innerText = "Faltam recursos! Diminui o divisor para as quotas subirem.";
+        else if (currentTotal > gameState.target) watty.innerText = "Sobralotagem! Sobe o divisor para reduzir as quotas.";
+        else watty.innerText = "Status: BALANCED. Parece que encontraste o ponto exato!";
+    }
+
+    function checkResult() {
+        const current = parseInt(document.getElementById('ui-current-total').innerText);
+        if (current === gameState.target) {
+            // Sucesso
+            const gainedXP = 50 + (gameState.level * 10);
+            gameState.xp += gainedXP;
+            document.getElementById('ui-xp').innerText = gameState.xp;
+            document.getElementById('ui-xp-bar').style.width = (gameState.xp / gameState.maxXP * 100) + "%";
+            
+            document.getElementById('modal-msg').innerText = `Afinação perfeita! Ganhaste +${gainedXP} XP.`;
+            document.getElementById('modal-success').style.display = 'flex';
+        } else {
+            // Erro
+            const win = document.getElementById('gameWindow');
+            win.classList.add('shake');
+            setTimeout(() => win.classList.remove('shake'), 400);
+            document.getElementById('watty-text').innerText = "Ainda não está certo. Tenta afinar melhor o slider!";
+        }
+    }
+
+    function startNextLevel() {
+        gameState.level++;
+        document.getElementById('modal-success').style.display = 'none';
+        if (gameState.level <= 100) {
+            initLevel(gameState.level);
+        } else {
+            alert("PARABÉNS! CHEGASTE AO NÍVEL 100! És um mestre da distribuição!");
+            location.reload();
+        }
+    }
+
+    document.getElementById('divisor-slider').addEventListener('input', updateValues);
+    
+    // Início
+    initLevel(1);
+</script>
+
+</body>
+</html>

@@ -1,8 +1,9 @@
 # Watty
 
-App Streamlit — tutor inteligente para alunos.
+App **Streamlit** (legado) e app **Next.js** para deploy no **Vercel** — tutor inteligente para alunos.
 
-Instruções de execução local: **[GUIA_EXECUCAO.md](GUIA_EXECUCAO.md)**.
+- **Web (Vercel):** pasta `web/` — ver [web/README.md](web/README.md) e `web/.env.example`.
+- **Streamlit (local / Streamlit Cloud):** ver [GUIA_EXECUCAO.md](GUIA_EXECUCAO.md).
 
 ## Arranque rápido
 
