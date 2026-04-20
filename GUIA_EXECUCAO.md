@@ -34,14 +34,29 @@ npm run build
 cd ../..
 ```
 
-### Deploy no Streamlit Cloud
+### Deploy no Streamlit Community Cloud
 
-O Streamlit Cloud **nao** executa automaticamente o `npm run build` do componente.
-Por isso, antes do deploy, faz o build local e inclui a pasta
-`watty_login_wizard/frontend/build` no commit enviado ao GitHub.
+O Streamlit Cloud **não** executa automaticamente o `npm run build` do componente.
+Por isso, a pasta `watty_login_wizard/frontend/build` tem de existir no repositório
+Git enviado ao GitHub (faz build local e commit, ou confia no workflow CI que falha
+se o bundle estiver desatualizado).
 
-Se essa pasta nao existir no repositorio, o deploy falha com:
+Se essa pasta não existir no repositório, o deploy falha com:
 `No such component directory`.
+
+**Checklist rápido**
+
+1. Faz push do repositório para o GitHub (com `frontend/build` incluído).
+2. Em [Streamlit Community Cloud](https://share.streamlit.io/), cria uma app nova
+   (ou atualiza uma existente): escolhe o **repositório**, **branch** (ex. `main`)
+   e ficheiro principal **`app.py`**.
+3. Em **Advanced settings** (no ecrã de deploy), escolhe a **versão de Python**
+   igual ou próxima da que usas em local (ex. 3.11 ou 3.12).
+4. Em **Settings → Secrets** da app na cloud, cola o mesmo conteúdo TOML que
+   terias em `.streamlit/secrets.toml` (não commits o ficheiro local; só o
+   painel da cloud). Inclui `gcp_service_account` como bloco TOML equivalente ao JSON da Google.
+5. No **Supabase → Authentication → URL Configuration → Redirect URLs**, adiciona
+   o URL público da app (ex. `https://<subdominio>.streamlit.app`) além do URL local.
 
 ---
 

@@ -11,6 +11,8 @@ App **Streamlit** (legado) e app **Next.js** para deploy no **Vercel** — tutor
 pip install -r requirements.txt
 ```
 
+Para correr testes Python: `pip install -r requirements-dev.txt` (inclui `pytest`).
+
 O ecrã de login usa um **custom component** em React. Depois de clonar o repositório, gera o bundle uma vez:
 
 ```bash

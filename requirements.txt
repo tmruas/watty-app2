@@ -4,4 +4,3 @@ google-genai
 gspread
 google-auth
 supabase
-pytest>=8.0
