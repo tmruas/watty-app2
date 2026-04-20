@@ -11,10 +11,9 @@ venv/
 #   git rm --cached .streamlit/secrets.toml
 .streamlit/secrets.toml
 
-# Large media (GitHub limit 100 MB; keep locally)
-wattyvid2.mp4
-
-# Login wizard (npm)
+# Login wizard: ignore only npm deps. The pre-built bundle under
+# `watty_login_wizard/frontend/build/` must stay committed for Streamlit Cloud
+# (no `npm run build` there).
 watty_login_wizard/frontend/node_modules/
 
 # Next.js (Watty web)
