@@ -21,7 +21,7 @@ from watty.services.auth_session import (
 from watty.services.sheets import carregar_perfil
 from watty.services.supabase_auth import get_user_email_and_metadata
 from watty.views.jogos import get_active_game_filename
-from watty_login_wizard import render_login_wizard
+from watty_login_wizard import LoginWizardBuildMissingError, render_login_wizard
 
 
 def _inject_watty_sidebar_chrome(sidebar_w: int, main_section: str) -> None:
@@ -121,12 +121,20 @@ def render_login_gate() -> None:
     except (KeyError, TypeError, AttributeError):
         pass
 
-    resultado = render_login_wizard(
-        key="watty_login_wizard",
-        supabase_url=supabase_url,
-        supabase_anon_key=supabase_anon,
-        supabase_email_redirect_url=email_redirect,
-    )
+    try:
+        resultado = render_login_wizard(
+            key="watty_login_wizard",
+            supabase_url=supabase_url,
+            supabase_anon_key=supabase_anon,
+            supabase_email_redirect_url=email_redirect,
+        )
+    except LoginWizardBuildMissingError as e:
+        st.error(str(e))
+        st.info(
+            "No Streamlit Cloud, garante que a pasta `watty_login_wizard/frontend/build` "
+            "esta versionada no repositório antes do deploy."
+        )
+        return
     if not resultado or not isinstance(resultado, dict):
         return
 

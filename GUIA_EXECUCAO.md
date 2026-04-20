@@ -34,6 +34,15 @@ npm run build
 cd ../..
 ```
 
+### Deploy no Streamlit Cloud
+
+O Streamlit Cloud **nao** executa automaticamente o `npm run build` do componente.
+Por isso, antes do deploy, faz o build local e inclui a pasta
+`watty_login_wizard/frontend/build` no commit enviado ao GitHub.
+
+Se essa pasta nao existir no repositorio, o deploy falha com:
+`No such component directory`.
+
 ---
 
 ## 3. Segredos Streamlit
