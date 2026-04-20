@@ -1,8 +1,14 @@
 __pycache__/
 *.py[cod]
+*$py.class
 .venv/
 venv/
 .env
+.env.*
+!.env.example
+
+# Streamlit: secrets are local only — if this file was ever committed, run:
+#   git rm --cached .streamlit/secrets.toml
 .streamlit/secrets.toml
 
 # Large media (GitHub limit 100 MB; keep locally)
