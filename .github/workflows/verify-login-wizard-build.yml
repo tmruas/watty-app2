@@ -4,7 +4,6 @@ name: Verify login wizard build
 
 on:
   push:
-    branches: [main, master]
     paths:
       - "watty_login_wizard/frontend/**"
       - ".github/workflows/verify-login-wizard-build.yml"
