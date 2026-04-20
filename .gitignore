@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+web/node_modules/
+
+# Next.js / frontend build
+.next/
+out/
+web/.next/
+web/out/
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Local env and secrets (never commit)
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
