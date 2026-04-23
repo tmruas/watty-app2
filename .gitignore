@@ -1,22 +1,34 @@
+# Dependencies
+node_modules/
+web/node_modules/
+
+# Next.js / frontend build
+.next/
+out/
+web/.next/
+web/out/
+
+# Python
+.venv/
+venv/
 __pycache__/
 *.py[cod]
 *$py.class
-.venv/
-venv/
+.pytest_cache/
+
+# Local env and secrets (never commit)
 .env
 .env.*
 !.env.example
-
-# Streamlit: secrets are local only — if this file was ever committed, run:
-#   git rm --cached .streamlit/secrets.toml
 .streamlit/secrets.toml
 
-# Login wizard: ignore only npm deps. The pre-built bundle under
-# `watty_login_wizard/frontend/build/` must stay committed for Streamlit Cloud
-# (no `npm run build` there).
+# Login wizard: bundle em `watty_login_wizard/frontend/build/` pode ir no Git;
+# só ignorar node_modules do wizard.
 watty_login_wizard/frontend/node_modules/
 
-# Next.js (Watty web)
-web/node_modules/
-web/.next/
-web/.env*.local
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/

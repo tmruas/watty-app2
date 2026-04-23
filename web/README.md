@@ -1,36 +1,36 @@
-# Watty (Next.js)
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-Interface web migrada do Streamlit: autenticação Supabase, chat/quiz/resumos com Gemini, perfis em Google Sheets, jogos HTML e Watty TV.
+## Getting Started
 
-## Requisitos
-
-- Node 20+
-- Conta Supabase (URL + anon key)
-- Chave **Gemini** (`GEMINI_API_KEY`)
-- Conta de serviço Google com acesso à folha **Watty_Logs** (mesmo JSON que no Streamlit: `GCP_SERVICE_ACCOUNT_JSON`)
-
-## Configuração
-
-1. Copia `web/.env.example` para `web/.env.local`.
-2. Preenche as variáveis (Gemini e JSON da conta de serviço **só no servidor** — não uses `NEXT_PUBLIC_` para segredos).
-3. Opcional: `GOOGLE_SHEETS_SPREADSHEET_ID` com o ID do URL da folha; se vazio, tenta localizar uma folha com o nome `Watty_Logs` no Drive da conta de serviço.
-
-## Desenvolvimento
+First, run the development server:
 
 ```bash
-cd web
-npm ci
 npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-Abre [http://localhost:3000](http://localhost:3000) — redireciona para `/login` se não houver sessão.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## Deploy (Vercel)
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-1. Importa o repositório e define **Root Directory** como `web`.
-2. Adiciona as mesmas variáveis de ambiente do `.env.example` no painel Vercel (incluindo `GCP_SERVICE_ACCOUNT_JSON` como texto JSON numa única variável).
-3. No Supabase Auth, adiciona o domínio Vercel aos **Redirect URLs** e define `NEXT_PUBLIC_SUPABASE_EMAIL_REDIRECT_URL` para `https://<teu-projeto>.vercel.app/login` se usares confirmação por email.
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Vídeos Watty TV
+## Learn More
 
-Coloca `wattyvid1.mp4` (e opcionalmente `wattyvid2.mp4`) em `web/public/media/` — o ficheiro grande pode ficar fora do Git e ser enviado manualmente ou via armazenamento externo.
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
