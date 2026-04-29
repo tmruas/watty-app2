@@ -2,7 +2,7 @@
 
 App **Streamlit** (legado) e app **Next.js** para deploy no **Vercel** — tutor inteligente para alunos.
 
-- **Web (Vercel):** pasta `web/` — ver [web/README.md](web/README.md) e `web/.env.example`.
+- **Web (Vercel):** pasta `web/` — ver [web/README.md](web/README.md) e [docs/web/environment-variables.md](docs/web/environment-variables.md) (sem ficheiros `.env` no Git).
 - **Streamlit (local / Streamlit Cloud):** ver [GUIA_EXECUCAO.md](GUIA_EXECUCAO.md).
 
 ## Arranque rápido

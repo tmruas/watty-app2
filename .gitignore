@@ -16,10 +16,9 @@ __pycache__/
 *$py.class
 .pytest_cache/
 
-# Local env and secrets (never commit)
+# Local env and secrets (never commit; inclui .env.example)
 .env
 .env.*
-!.env.example
 .streamlit/secrets.toml
 
 # Login wizard: bundle em `watty_login_wizard/frontend/build/` pode ir no Git;
