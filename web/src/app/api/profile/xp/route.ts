@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { atualizarXpNivel, verifyPerfilLinha } from "@/lib/sheets";
+import { forwardToPythonBackend, hasPythonBackendConfigured } from "@/lib/python-backend";
 import { createClient } from "@/lib/supabase/server";
 
 const bodySchema = z.object({
@@ -11,6 +12,17 @@ const bodySchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    if (hasPythonBackendConfigured()) {
+      const body = bodySchema.parse(await request.json());
+      const upstream = await forwardToPythonBackend("/api/profile/xp", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const payload = await upstream.json();
+      return NextResponse.json(payload, { status: upstream.status });
+    }
+
     const supabase = await createClient();
     const {
       data: { user },

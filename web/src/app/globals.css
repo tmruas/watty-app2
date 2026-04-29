@@ -1,6 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@config "../../tailwind.config.ts";
+@import "tailwindcss";
 
 @layer base {
   html {
@@ -10,17 +9,19 @@
   }
 
   body {
-    @apply font-sans leading-duobody antialiased text-watty-ink;
     margin: 0;
     max-width: 100%;
     overflow-x: clip;
     background-color: #ffffff;
     min-height: 100%;
+    font-family: var(--font-nunito), system-ui, -apple-system, sans-serif;
+    line-height: 1.55;
+    color: #1f2937;
   }
 
   h1,
   h2 {
-    @apply tracking-feather;
+    letter-spacing: 0.01em;
     line-height: 1.08;
   }
 }

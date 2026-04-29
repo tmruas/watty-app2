@@ -1,9 +1,18 @@
 import { NextResponse } from "next/server";
 import { carregarPerfil } from "@/lib/sheets";
+import { forwardToPythonBackend, hasPythonBackendConfigured } from "@/lib/python-backend";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET() {
   try {
+    if (hasPythonBackendConfigured()) {
+      const upstream = await forwardToPythonBackend("/api/profile", {
+        method: "GET",
+      });
+      const payload = await upstream.json();
+      return NextResponse.json(payload, { status: upstream.status });
+    }
+
     const supabase = await createClient();
     const {
       data: { user },

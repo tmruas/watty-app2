@@ -1,36 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Watty Web (sem Streamlit)
 
-## Getting Started
+Frontend e APIs em Next.js para deploy na Vercel.
 
-First, run the development server:
+## Estrutura
+
+- App Router em `src/app`
+- Componentes em `src/components`
+- Lógica de domínio em `src/lib`
+- Middleware em `src/middleware.ts`
+
+## Desenvolvimento local
 
 ```bash
+npm install
+cp .env.example .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abrir `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Variáveis de ambiente
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Ver `.env.example`.
 
-## Learn More
+Modos de execução suportados:
 
-To learn more about Next.js, take a look at the following resources:
+- **Next + fallback local**: Next fala diretamente com Google Sheets (`GCP_SERVICE_ACCOUNT_JSON` e `GOOGLE_SHEETS_SPREADSHEET_ID`).
+- **Híbrido (recomendado para migração)**: definir `PYTHON_BACKEND_URL` para encaminhar `/api/profile`, `/api/profile/xp` e `/api/logs` para backend Python externo.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Build e deploy
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm run build
+```
 
-## Deploy on Vercel
+Na Vercel:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Root Directory: `web`
+- Framework: Next.js
+- Build Command: `npm run build`
+- Install Command: `npm install`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Notas de migração
+
+- Não usar `.streamlit/secrets.toml`.
+- Segredos devem ficar apenas em `.env.local` (local) e Environment Variables da Vercel (produção).
